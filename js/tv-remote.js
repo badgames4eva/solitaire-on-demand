@@ -220,7 +220,13 @@ class TVRemoteHandler {
         this.focusableElements = Array.from(document.querySelectorAll('.focusable:not([disabled])'))
             .filter(el => {
                 const style = window.getComputedStyle(el);
-                return style.display !== 'none' && style.visibility !== 'hidden';
+                const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+                
+                // Only include elements that are in the currently active screen
+                const activeScreen = document.querySelector('.screen.active');
+                const isInActiveScreen = activeScreen && activeScreen.contains(el);
+                
+                return isVisible && isInActiveScreen;
             });
     }
 

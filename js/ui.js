@@ -78,6 +78,60 @@ class UIManager {
         window.addEventListener('resize', () => {
             this.updateLayout();
         });
+
+        // Custom TV remote navigation for game screen
+        this.setupGameNavigation();
+    }
+
+    /**
+     * Setup custom game navigation for TV remote
+     */
+    setupGameNavigation() {
+        // Override TV remote navigation when in game screen
+        const originalTVRemoteHandleKeyPress = this.tvRemote.handleKeyPress.bind(this.tvRemote);
+        
+        this.tvRemote.handleKeyPress = (eventType) => {
+            // If we're in game screen, use our custom navigation
+            if (this.currentScreen === 'game-screen') {
+                this.handleGameNavigation(eventType);
+            } else {
+                // Use default TV remote navigation for other screens
+                originalTVRemoteHandleKeyPress(eventType);
+            }
+        };
+    }
+
+    /**
+     * Handle game-specific navigation
+     */
+    handleGameNavigation(eventType) {
+        switch (eventType) {
+            case 'up':
+                this.navigateUp();
+                this.updateKeyboardFocus();
+                break;
+            case 'down':
+                this.navigateDown();
+                this.updateKeyboardFocus();
+                break;
+            case 'left':
+                this.navigateLeft();
+                this.updateKeyboardFocus();
+                break;
+            case 'right':
+                this.navigateRight();
+                this.updateKeyboardFocus();
+                break;
+            case 'select':
+                this.activateCurrentSelection();
+                break;
+            case 'back':
+                this.handleBackButton();
+                break;
+            case 'menu':
+                this.handleMenuButton();
+                break;
+        }
     }
 
     /**
@@ -175,7 +229,12 @@ class UIManager {
         
         switch (nav.currentArea) {
             case 'tableau':
-                nav.currentColumn = Math.max(0, nav.currentColumn - 1);
+                if (nav.currentColumn > 0) {
+                    nav.currentColumn--;
+                    // Always focus on the last card in the new column (the selectable one)
+                    const leftColumn = this.gameState.tableau[nav.currentColumn];
+                    nav.currentRow = Math.max(0, leftColumn.length - 1);
+                }
                 break;
             case 'foundation':
                 nav.currentColumn = Math.max(0, nav.currentColumn - 1);
@@ -197,7 +256,12 @@ class UIManager {
         
         switch (nav.currentArea) {
             case 'tableau':
-                nav.currentColumn = Math.min(6, nav.currentColumn + 1);
+                if (nav.currentColumn < 6) {
+                    nav.currentColumn++;
+                    // Always focus on the last card in the new column (the selectable one)
+                    const rightColumn = this.gameState.tableau[nav.currentColumn];
+                    nav.currentRow = Math.max(0, rightColumn.length - 1);
+                }
                 break;
             case 'foundation':
                 nav.currentColumn = Math.min(3, nav.currentColumn + 1);
@@ -219,20 +283,23 @@ class UIManager {
         
         switch (nav.currentArea) {
             case 'tableau':
-                if (nav.currentRow > 0) {
-                    nav.currentRow--;
-                } else {
-                    nav.currentArea = 'foundation';
-                    nav.currentColumn = Math.min(nav.currentColumn, 3);
-                }
+                // From tableau, go directly to stock/waste area
+                nav.currentArea = 'stock';
+                nav.currentColumn = 0;
+                nav.currentRow = 0;
                 break;
             case 'foundation':
-                // Stay in foundation
+                // Stay in foundation, can't go higher
                 break;
             case 'stock':
-            case 'waste':
+                // From stock, go to foundation
                 nav.currentArea = 'foundation';
-                nav.currentColumn = 3;
+                nav.currentColumn = 0;
+                break;
+            case 'waste':
+                // From waste, go to foundation
+                nav.currentArea = 'foundation';
+                nav.currentColumn = 1;
                 break;
         }
     }
@@ -245,20 +312,22 @@ class UIManager {
         
         switch (nav.currentArea) {
             case 'foundation':
+                // From foundation, go to tableau
                 nav.currentArea = 'tableau';
-                nav.currentRow = 0;
+                nav.currentColumn = Math.min(nav.currentColumn, 6);
+                const column = this.gameState.tableau[nav.currentColumn];
+                nav.currentRow = Math.max(0, column.length - 1);
                 break;
             case 'tableau':
-                const column = this.gameState.tableau[nav.currentColumn];
-                if (nav.currentRow < column.length - 1) {
-                    nav.currentRow++;
-                }
+                // In tableau, stay in tableau (no vertical movement within columns)
                 break;
             case 'stock':
             case 'waste':
+                // From stock/waste, go to tableau
                 nav.currentArea = 'tableau';
-                nav.currentColumn = 6;
-                nav.currentRow = 0;
+                nav.currentColumn = 0;
+                const firstColumn = this.gameState.tableau[0];
+                nav.currentRow = Math.max(0, firstColumn.length - 1);
                 break;
         }
     }
@@ -329,7 +398,14 @@ class UIManager {
                 if (focusElement) {
                     const cards = focusElement.querySelectorAll('.card');
                     if (cards[nav.currentRow]) {
+                        // Focus on the specific card
                         focusElement = cards[nav.currentRow];
+                    } else if (cards.length === 0) {
+                        // Empty column - focus on the column container itself
+                        // focusElement is already set to the column container
+                    } else {
+                        // Invalid row index, focus on the column container
+                        // focusElement is already set to the column container
                     }
                 }
                 break;
@@ -453,9 +529,11 @@ class UIManager {
      * Initialize keyboard navigation for game screen
      */
     initializeKeyboardNavigation() {
+        // Start with the first tableau column, focusing on the last (selectable) card
+        const firstColumn = this.gameState.tableau[0];
         this.keyboardNavigation = {
             currentColumn: 0,
-            currentRow: 0,
+            currentRow: Math.max(0, firstColumn.length - 1),
             currentArea: 'tableau'
         };
         this.updateKeyboardFocus();
@@ -626,9 +704,11 @@ class UIManager {
      * Handle foundation pile click
      */
     handleFoundationClick(foundationIndex) {
+        // Foundation piles are only drop targets, not selectable
         if (this.selectedCards.length === 1) {
             this.attemptMove('foundation', foundationIndex);
         }
+        // Don't allow selecting cards from foundation piles
     }
 
     /**
