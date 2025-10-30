@@ -1,0 +1,52 @@
+# Fire TV App Manifest for Solitaire On Demand
+# Required for TV remote button events support
+
+[app]
+name = "Solitaire On Demand"
+version = "1.0.0"
+description = "A progressive web app for Klondike Solitaire with TV remote support and multiple difficulty levels"
+author = "Solitaire On Demand Team"
+homepage = "https://solitaire-on-demand.app"
+
+[app.display]
+orientation = "landscape"
+fullscreen = true
+
+# Required for remote button events
+[[wants.service]]
+id = "com.amazon.inputd.service"
+
+# Optional services for enhanced functionality
+[[wants.service]]
+id = "com.amazon.tv.launcher"
+
+[[wants.service]]
+id = "com.amazon.tv.settings"
+
+[permissions]
+# Basic permissions for a game app
+internet = true
+storage = true
+
+[features]
+# Declare that this app supports TV remote navigation
+tv_remote = true
+gamepad = false
+touch = false
+
+[input]
+# Supported input methods
+remote = true
+keyboard = true
+mouse = false
+
+[categories]
+primary = "games"
+secondary = ["entertainment", "puzzle"]
+
+[metadata]
+# Game-specific metadata
+genre = "card"
+players = "single"
+difficulty_levels = ["easy", "medium", "hard"]
+offline_support = true

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solitaire On Demand</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#2d5a27">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen active">
+            <h1>Solitaire On Demand</h1>
+            <div class="menu-options">
+                <button class="menu-btn focusable" data-action="new-game" data-difficulty="easy">Easy Game</button>
+                <button class="menu-btn focusable" data-action="new-game" data-difficulty="medium">Medium Game</button>
+                <button class="menu-btn focusable" data-action="new-game" data-difficulty="hard">Hard Game</button>
+                <button class="menu-btn focusable" data-action="stats">Statistics</button>
+                <button class="menu-btn focusable" data-action="settings">Settings</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="game-info">
+                    <span id="difficulty-display">Medium</span>
+                    <span id="timer">00:00</span>
+                    <span id="moves-counter">Moves: 0</span>
+                    <span id="score">Score: 0</span>
+                </div>
+                <div class="game-controls">
+                    <button class="control-btn focusable" id="hint-btn">Hint</button>
+                    <button class="control-btn focusable" id="undo-btn">Undo</button>
+                    <button class="control-btn focusable" id="menu-btn">Menu</button>
+                </div>
+            </div>
+
+            <div class="game-board">
+                <!-- Foundation Piles (Top Right) -->
+                <div class="foundation-area">
+                    <div class="foundation-pile focusable" data-suit="hearts" data-area="foundation"></div>
+                    <div class="foundation-pile focusable" data-suit="diamonds" data-area="foundation"></div>
+                    <div class="foundation-pile focusable" data-suit="clubs" data-area="foundation"></div>
+                    <div class="foundation-pile focusable" data-suit="spades" data-area="foundation"></div>
+                </div>
+
+                <!-- Stock and Waste Piles (Top Left) -->
+                <div class="stock-area">
+                    <div class="stock-pile focusable" data-area="stock"></div>
+                    <div class="waste-pile focusable" data-area="waste"></div>
+                </div>
+
+                <!-- Tableau (Seven Columns) -->
+                <div class="tableau-area">
+                    <div class="tableau-column focusable" data-column="0" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="1" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="2" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="3" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="4" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="5" data-area="tableau"></div>
+                    <div class="tableau-column focusable" data-column="6" data-area="tableau"></div>
+                </div>
+            </div>
+
+            <!-- Selected Cards Display -->
+            <div id="selected-cards" class="selected-cards"></div>
+        </div>
+
+        <!-- Statistics Screen -->
+        <div id="stats-screen" class="screen">
+            <h2>Game Statistics</h2>
+            <div class="stats-content">
+                <div class="stat-item">
+                    <span class="stat-label">Games Played:</span>
+                    <span class="stat-value" id="games-played">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Games Won:</span>
+                    <span class="stat-value" id="games-won">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Win Rate:</span>
+                    <span class="stat-value" id="win-rate">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Average Game Time:</span>
+                    <span class="stat-value" id="avg-time">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Best Time:</span>
+                    <span class="stat-value" id="best-time">--:--</span>
+                </div>
+            </div>
+            <button class="menu-btn focusable" data-action="back-to-menu">Back to Menu</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <h2>Settings</h2>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <label>Auto-complete when possible:</label>
+                    <input type="checkbox" id="auto-complete" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Show available moves:</label>
+                    <input type="checkbox" id="show-hints" checked>
+                </div>
+                <div class="setting-item">
+                    <label>Sound effects:</label>
+                    <input type="checkbox" id="sound-effects" checked>
+                </div>
+            </div>
+            <button class="menu-btn focusable" data-action="back-to-menu">Back to Menu</button>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="game-over-title">Congratulations!</h2>
+                <p id="game-over-message">You won the game!</p>
+                <div class="game-over-stats">
+                    <p>Time: <span id="final-time">00:00</span></p>
+                    <p>Moves: <span id="final-moves">0</span></p>
+                    <p>Score: <span id="final-score">0</span></p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn focusable" data-action="new-game-same">Play Again</button>
+                    <button class="modal-btn focusable" data-action="back-to-menu">Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/card.js"></script>
+    <script src="js/deck.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/tv-remote.js"></script>
+    <script src="js/difficulty.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

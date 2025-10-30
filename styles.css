@@ -1,0 +1,558 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #2d5a27 0%, #1a3d1a 100%);
+    color: white;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* App Container */
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+/* Screen Management */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Main Menu Styles */
+#main-menu {
+    text-align: center;
+}
+
+#main-menu h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.menu-btn {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.menu-btn:hover,
+.menu-btn.focused {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffdd44;
+    transform: scale(1.05);
+}
+
+/* Game Screen Layout */
+#game-screen {
+    padding: 1rem;
+    justify-content: flex-start;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+}
+
+.game-info {
+    display: flex;
+    gap: 2rem;
+    font-size: 1.1rem;
+}
+
+.game-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.control-btn {
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.control-btn:hover,
+.control-btn.focused {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffdd44;
+}
+
+/* Game Board Layout */
+.game-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 2rem;
+    width: 100%;
+    height: calc(100vh - 120px);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Foundation Area (Top Right) */
+.foundation-area {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
+.foundation-pile {
+    width: 80px;
+    height: 110px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.foundation-pile.focused {
+    border-color: #ffdd44;
+    background: rgba(255, 221, 68, 0.1);
+}
+
+.foundation-pile[data-suit="hearts"]::before {
+    content: "♥";
+    color: #ff4444;
+}
+
+.foundation-pile[data-suit="diamonds"]::before {
+    content: "♦";
+    color: #ff4444;
+}
+
+.foundation-pile[data-suit="clubs"]::before {
+    content: "♣";
+    color: #333;
+}
+
+.foundation-pile[data-suit="spades"]::before {
+    content: "♠";
+    color: #333;
+}
+
+.foundation-pile::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    opacity: 0.3;
+}
+
+/* Stock Area (Top Left) */
+.stock-area {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.stock-pile,
+.waste-pile {
+    width: 80px;
+    height: 110px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stock-pile.focused,
+.waste-pile.focused {
+    border-color: #ffdd44;
+    background: rgba(255, 221, 68, 0.1);
+}
+
+.stock-pile::before {
+    content: "🂠";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+}
+
+/* Tableau Area (Bottom, spans both columns) */
+.tableau-area {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100%;
+}
+
+.tableau-column {
+    width: 80px;
+    min-height: 110px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.tableau-column.focused {
+    border-color: #ffdd44;
+    background: rgba(255, 221, 68, 0.1);
+}
+
+.tableau-column.empty::before {
+    content: "K";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+/* Card Styles */
+.card {
+    width: 80px;
+    height: 110px;
+    border-radius: 8px;
+    position: absolute;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    user-select: none;
+}
+
+.card.face-up {
+    background: white;
+    color: #333;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px;
+}
+
+.card.face-down {
+    background: linear-gradient(135deg, #1a4d72 0%, #2d5a87 100%);
+    border: 1px solid #0f3a5f;
+}
+
+.card.face-down::before {
+    content: "🂠";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.card.selected {
+    transform: translateY(-10px);
+    box-shadow: 0 4px 8px rgba(255, 221, 68, 0.5);
+    border-color: #ffdd44;
+}
+
+.card.red {
+    color: #d32f2f;
+}
+
+.card.black {
+    color: #333;
+}
+
+.card-rank {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.card-suit {
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.card-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+}
+
+/* Selected Cards Display */
+.selected-cards {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 1000;
+}
+
+/* Statistics Screen */
+#stats-screen,
+#settings-screen {
+    padding: 2rem;
+}
+
+#stats-screen h2,
+#settings-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.stats-content,
+.settings-content {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    min-width: 400px;
+}
+
+.stat-item,
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item:last-child,
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 1.1rem;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffdd44;
+}
+
+/* Settings */
+.setting-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #2d5a27 0%, #1a3d1a 100%);
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    min-width: 400px;
+}
+
+.modal-content h2 {
+    margin-bottom: 1rem;
+    color: #ffdd44;
+}
+
+.game-over-stats {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.game-over-stats p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.modal-btn {
+    padding: 0.8rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-btn:hover,
+.modal-btn.focused {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffdd44;
+}
+
+/* Focus Management */
+.focusable.focused {
+    outline: 2px solid #ffdd44;
+    outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes cardFlip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(0deg); }
+}
+
+.card.flipping {
+    animation: cardFlip 0.6s ease-in-out;
+}
+
+@keyframes cardMove {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.card.moving {
+    animation: cardMove 0.3s ease-in-out;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .game-board {
+        gap: 1rem;
+    }
+    
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 70px;
+        height: 96px;
+    }
+    
+    .card-center {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .game-info {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 60px;
+        height: 82px;
+    }
+    
+    .tableau-area {
+        gap: 0.3rem;
+    }
+}
+
+/* Hint Highlighting */
+.hint-highlight {
+    box-shadow: 0 0 15px #ffdd44 !important;
+    border-color: #ffdd44 !important;
+}
+
+/* Keyboard Focus Indicator */
+.keyboard-focus {
+    box-shadow: 0 0 0 3px #00bfff !important;
+    outline: 2px solid #00bfff;
+    outline-offset: 2px;
+    z-index: 100;
+}
+
+.keyboard-focus.card {
+    transform: translateY(-3px);
+}
+
+.keyboard-focus.foundation-pile,
+.keyboard-focus.stock-pile,
+.keyboard-focus.waste-pile,
+.keyboard-focus.tableau-column {
+    border-color: #00bfff !important;
+    background: rgba(0, 191, 255, 0.1) !important;
+}
+
+/* Auto-complete Animation */
+@keyframes autoComplete {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-200px); opacity: 0; }
+}
+
+.card.auto-completing {
+    animation: autoComplete 0.8s ease-in forwards;
+}
