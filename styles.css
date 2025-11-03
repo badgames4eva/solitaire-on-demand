@@ -1,104 +1,130 @@
-/* Reset and Base Styles */
+/* ========================================
+   RESET AND BASE STYLES
+   ======================================== */
+
+/* Universal reset for consistent styling across browsers */
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Include padding and border in element width/height */
 }
 
+/* Main body styling with solitaire green theme */
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #2d5a27 0%, #1a3d1a 100%);
+    background: linear-gradient(135deg, #2d5a27 0%, #1a3d1a 100%); /* Green gradient background */
     color: white;
-    overflow: hidden;
-    height: 100vh;
+    overflow: hidden; /* Prevent scrolling for full-screen app experience */
+    height: 100vh;   /* Full viewport height */
 }
 
-/* App Container */
+/* ========================================
+   APP CONTAINER AND SCREEN MANAGEMENT
+   ======================================== */
+
+/* Main application container - holds all screens */
 #app {
-    width: 100vw;
-    height: 100vh;
-    position: relative;
+    width: 100vw;  /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+    position: relative; /* Allows absolute positioning of child screens */
 }
 
-/* Screen Management */
+/* Base screen styling - all screens use this class */
 .screen {
-    position: absolute;
+    position: absolute; /* Stack screens on top of each other */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    display: none;
+    display: none; /* Hidden by default */
     flex-direction: column;
     align-items: center;
     justify-content: center;
 }
 
+/* Active screen is visible - only one screen active at a time */
 .screen.active {
     display: flex;
 }
 
-/* Main Menu Styles */
+/* ========================================
+   MAIN MENU STYLES
+   ======================================== */
+
+/* Main menu screen container */
 #main-menu {
     text-align: center;
 }
 
+/* Game title with shadow effect */
 #main-menu h1 {
     font-size: 3rem;
     margin-bottom: 2rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Depth effect */
 }
 
+/* Menu buttons container - vertical layout */
 .menu-options {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1rem; /* Space between buttons */
 }
 
+/* Individual menu button styling */
 .menu-btn {
     padding: 1rem 2rem;
     font-size: 1.2rem;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 200px;
+    transition: all 0.3s ease; /* Smooth hover/focus transitions */
+    min-width: 200px; /* Consistent button width */
 }
 
+/* Button hover and focus states for TV remote navigation */
 .menu-btn:hover,
 .menu-btn.focused {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ffdd44;
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.2); /* Brighter background */
+    border-color: #ffdd44; /* Yellow highlight border */
+    transform: scale(1.05); /* Slight size increase for feedback */
 }
 
-/* Game Screen Layout */
+/* ========================================
+   GAME SCREEN LAYOUT
+   ======================================== */
+
+/* Main game screen container */
 #game-screen {
     padding: 1rem;
-    justify-content: flex-start;
+    justify-content: flex-start; /* Align content to top */
 }
 
+/* Game header with info and controls */
 .game-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Info on left, controls on right */
     align-items: center;
     width: 100%;
     margin-bottom: 1rem;
     padding: 0 1rem;
 }
 
+/* Left side: Game status information */
 .game-info {
     display: flex;
-    gap: 2rem;
+    gap: 2rem; /* Space between info items */
     font-size: 1.1rem;
 }
 
+/* Right side: Game control buttons */
 .game-controls {
     display: flex;
-    gap: 1rem;
+    gap: 1rem; /* Space between control buttons */
 }
 
+/* Individual control button styling */
 .control-btn {
     padding: 0.5rem 1rem;
     background: rgba(255, 255, 255, 0.1);
@@ -107,106 +133,172 @@ body {
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative; /* For positioning TV remote indicators */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Space between text and remote indicator */
 }
 
+/* Control button hover and focus states */
 .control-btn:hover,
 .control-btn.focused {
     background: rgba(255, 255, 255, 0.2);
-    border-color: #ffdd44;
+    border-color: #ffdd44; /* Yellow highlight for TV remote navigation */
 }
 
-/* Game Board Layout */
+/* TV Remote Button Indicators - shown when using TV remote navigation */
+.control-btn::after {
+    content: "";
+    display: none; /* Hidden by default */
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Show TV remote indicators when in TV remote mode */
+body.tv-remote-mode .control-btn::after {
+    display: inline-block;
+}
+
+/* Specific button indicators for Fire TV remote using your provided icons */
+body.tv-remote-mode #hint-btn::after {
+    content: "⏯️"; /* Play/pause icon for hint */
+}
+
+body.tv-remote-mode #undo-btn::after {
+    content: "↩️"; /* Return/undo arrow icon */
+}
+
+body.tv-remote-mode #menu-btn::after {
+    content: "☰"; /* Menu hamburger icon */
+}
+
+/* Enhanced focus state for TV remote with SELECT instruction */
+body.tv-remote-mode .control-btn.focused::before {
+    /* content: "SELECT"; */
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    /* color: #ffdd44; */
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 100;
+}
+
+/* ========================================
+   GAME BOARD LAYOUT
+   ======================================== */
+
+/* Main game board using CSS Grid for precise layout */
 .game-board {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr;
-    gap: 2rem;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    grid-template-rows: auto 1fr;   /* Top row auto-sized, bottom row fills remaining space */
+    gap: 2rem; /* Space between grid areas */
     width: 100%;
-    height: calc(100vh - 120px);
-    max-width: 1200px;
-    margin: 0 auto;
+    height: calc(100vh - 120px); /* Full height minus header */
+    max-width: 1200px; /* Maximum width for large screens */
+    margin: 0 auto; /* Center the board */
 }
 
-/* Foundation Area (Top Right) */
+/* ========================================
+   FOUNDATION AREA (Top Right)
+   ======================================== */
+
+/* Container for the four foundation piles */
 .foundation-area {
     display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    gap: 0.5rem; /* Small gap between foundation piles */
+    justify-content: flex-end; /* Align to right side of grid cell */
     align-items: flex-start;
 }
 
+/* Individual foundation pile styling */
 .foundation-pile {
-    width: 80px;
-    height: 110px;
-    border: 2px dashed rgba(255, 255, 255, 0.3);
+    width: 80px;  /* Standard card width */
+    height: 110px; /* Standard card height */
+    border: 2px dashed rgba(255, 255, 255, 0.3); /* Dashed border indicates drop zone */
     border-radius: 8px;
     position: relative;
-    background: rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    background: rgba(0, 0, 0, 0.2); /* Dark semi-transparent background */
+    transition: all 0.3s ease; /* Smooth focus transitions */
 }
 
+/* Foundation pile focus state for TV remote navigation */
 .foundation-pile.focused {
-    border-color: #ffdd44;
-    background: rgba(255, 221, 68, 0.1);
+    border-color: #ffdd44; /* Yellow highlight */
+    background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
+/* Foundation pile suit indicators - show which suit belongs in each pile */
 .foundation-pile[data-suit="hearts"]::before {
     content: "♥";
-    color: #ff4444;
+    color: #ff4444; /* Red for hearts */
 }
 
 .foundation-pile[data-suit="diamonds"]::before {
     content: "♦";
-    color: #ff4444;
+    color: #ff4444; /* Red for diamonds */
 }
 
 .foundation-pile[data-suit="clubs"]::before {
     content: "♣";
-    color: #333;
+    color: #333; /* Black for clubs */
 }
 
 .foundation-pile[data-suit="spades"]::before {
     content: "♠";
-    color: #333;
+    color: #333; /* Black for spades */
 }
 
+/* Common styling for all foundation pile suit indicators */
 .foundation-pile::before {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%); /* Center the suit symbol */
     font-size: 2rem;
-    opacity: 0.3;
+    opacity: 0.3; /* Subtle visibility when empty */
 }
 
-/* Stock Area (Top Left) */
+/* ========================================
+   STOCK AREA (Top Left)
+   ======================================== */
+
+/* Container for stock and waste piles */
 .stock-area {
     display: flex;
-    gap: 1rem;
-    justify-content: flex-start;
+    gap: 1rem; /* Space between stock and waste piles */
+    justify-content: flex-start; /* Align to left side of grid cell */
     align-items: flex-start;
 }
 
+/* Stock pile (face-down cards) and waste pile (face-up drawn cards) */
 .stock-pile,
 .waste-pile {
-    width: 80px;
-    height: 110px;
+    width: 80px;  /* Standard card width */
+    height: 110px; /* Standard card height */
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
     position: relative;
-    background: rgba(0, 0, 0, 0.3);
-    cursor: pointer;
+    background: rgba(0, 0, 0, 0.3); /* Darker background than foundation */
+    cursor: pointer; /* Indicates clickable */
     transition: all 0.3s ease;
 }
 
+/* Focus states for TV remote navigation */
 .stock-pile.focused,
 .waste-pile.focused {
-    border-color: #ffdd44;
-    background: rgba(255, 221, 68, 0.1);
+    border-color: #ffdd44; /* Yellow highlight */
+    background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
+/* Stock pile indicator - shows card back symbol */
 .stock-pile::before {
-    content: "🂠";
+    content: "🂠"; /* Unicode card back symbol */
     position: absolute;
     top: 50%;
     left: 50%;
@@ -214,39 +306,46 @@ body {
     font-size: 2rem;
 }
 
-/* Tableau Area (Bottom, spans both columns) */
+/* ========================================
+   TABLEAU AREA (Bottom, spans both columns)
+   ======================================== */
+
+/* Main playing area with seven columns */
 .tableau-area {
-    grid-column: 1 / -1;
+    grid-column: 1 / -1; /* Span both grid columns */
     display: flex;
-    gap: 0.5rem;
-    justify-content: center;
+    gap: 0.5rem; /* Small gap between columns */
+    justify-content: center; /* Center the seven columns */
     align-items: flex-start;
-    height: 100%;
+    height: 100%; /* Fill remaining grid space */
 }
 
+/* Individual tableau column */
 .tableau-column {
-    width: 80px;
-    min-height: 110px;
-    border: 2px dashed rgba(255, 255, 255, 0.2);
+    width: 80px;  /* Standard card width */
+    min-height: 110px; /* Minimum height of one card */
+    border: 2px dashed rgba(255, 255, 255, 0.2); /* Subtle dashed border */
     border-radius: 8px;
     position: relative;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.1); /* Very subtle background */
     transition: all 0.3s ease;
 }
 
+/* Tableau column focus state */
 .tableau-column.focused {
-    border-color: #ffdd44;
-    background: rgba(255, 221, 68, 0.1);
+    border-color: #ffdd44; /* Yellow highlight */
+    background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
+/* Empty column indicator - shows "K" to indicate only Kings can be placed */
 .tableau-column.empty::before {
-    content: "K";
+    content: "K"; /* King indicator */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 1.5rem;
-    opacity: 0.3;
+    opacity: 0.3; /* Subtle visibility */
 }
 
 /* Card Styles */

@@ -1,39 +1,46 @@
 /**
  * Main Game Controller for Solitaire On Demand
  * Coordinates all game systems and manages the overall game flow
+ * Acts as the central hub connecting game state, UI, difficulty, and TV remote systems
  */
 class SolitaireGame {
+    /**
+     * Create the main game controller and initialize all subsystems
+     */
     constructor() {
-        this.gameState = null;
-        this.difficultyManager = null;
-        this.tvRemote = null;
-        this.uiManager = null;
-        this.isInitialized = false;
+        // Core game components (initialized in init())
+        this.gameState = null;          // Manages card positions, score, moves, etc.
+        this.difficultyManager = null;  // Handles difficulty settings and rules
+        this.tvRemote = null;          // Manages Fire TV remote navigation
+        this.uiManager = null;         // Handles all user interface interactions
+        this.isInitialized = false;    // Flag to track initialization status
         
-        this.init();
+        this.init(); // Start the initialization process
     }
 
     /**
-     * Initialize the game
+     * Initialize all game systems and establish connections between them
+     * This is the main setup method that creates and wires together all components
      */
     init() {
         try {
-            // Initialize core systems
-            this.gameState = new GameState();
-            this.difficultyManager = new DifficultyManager();
-            this.tvRemote = new TVRemoteHandler();
+            // Initialize core game systems in dependency order
+            this.gameState = new GameState();                    // Game logic and state
+            this.difficultyManager = new DifficultyManager();    // Difficulty rules and features
+            this.tvRemote = new TVRemoteHandler();              // Fire TV remote navigation
             
-            // Initialize UI manager with dependencies
+            // Initialize UI manager with all dependencies
+            // The UI manager needs access to all other systems to function
             this.uiManager = new UIManager(
-                this.gameState, 
-                this.difficultyManager, 
-                this.tvRemote
+                this.gameState,         // For game state updates and rendering
+                this.difficultyManager, // For difficulty-specific UI behavior
+                this.tvRemote          // For navigation and focus management
             );
             
-            // Setup game-specific event handlers
+            // Setup additional event handlers specific to the main game controller
             this.setupGameEventHandlers();
             
-            // Mark as initialized
+            // Mark initialization as complete
             this.isInitialized = true;
             
             console.log('Solitaire On Demand initialized successfully');

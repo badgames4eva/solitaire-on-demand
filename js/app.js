@@ -1,31 +1,36 @@
 /**
  * Application Entry Point for Solitaire On Demand
- * Initializes the game and handles global app lifecycle
+ * Initializes the game and handles global app lifecycle, PWA features, and error handling
+ * This is the main bootstrap file that sets up the entire application
  */
 
-// Global game instance
+// Global game instance - holds the main SolitaireGame controller
 let solitaireGame = null;
 
 /**
- * Initialize the application
+ * Initialize the application and all its subsystems
+ * This is the main entry point called when the DOM is ready
  */
 function initializeApp() {
     console.log('Initializing Solitaire On Demand...');
     
     try {
-        // Create the main game instance
+        // Create the main game instance which coordinates all other systems
         solitaireGame = new SolitaireGame();
         
-        // Make game instance globally accessible for debugging
+        // Make game instance globally accessible for debugging and console access
         window.solitaireGame = solitaireGame;
         
-        // Setup global error handling
+        // Setup global error handling to catch and display unexpected errors
         setupErrorHandling();
         
-        // Setup service worker for PWA functionality
+        // Setup service worker for Progressive Web App (PWA) functionality
         setupServiceWorker();
         
-        // Check for saved game and offer to restore
+        // Setup Fire TV remote button handlers
+        setupTVRemoteHandlers();
+        
+        // Check if there's a saved game and offer to restore it
         checkForSavedGame();
         
         console.log('Solitaire On Demand initialized successfully');
@@ -34,6 +39,74 @@ function initializeApp() {
         console.error('Failed to initialize application:', error);
         showFatalError('Failed to start the game. Please refresh the page and try again.');
     }
+}
+
+/**
+ * Setup Fire TV remote button handlers
+ * Maps Fire TV remote buttons to game functions:
+ * - Menu button → Menu action
+ * - Play button → Hint action
+ * - Back button → Undo action
+ */
+function setupTVRemoteHandlers() {
+    // Handle Menu button press
+    document.addEventListener('tvmenu', (event) => {
+        console.log('TV Menu button pressed');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - return to main menu
+                solitaireGame.uiManager.showScreen('main-menu');
+            } else {
+                // In other screens - try to go back or to main menu
+                solitaireGame.uiManager.showScreen('main-menu');
+            }
+        }
+    });
+    
+    // Handle Play button press (for Hint functionality)
+    document.addEventListener('tvplay', (event) => {
+        console.log('TV Play button pressed (Hint)');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // Only show hints in game screen
+                const hintBtn = document.getElementById('hint-btn');
+                if (hintBtn && !hintBtn.disabled) {
+                    hintBtn.click();
+                }
+            }
+        }
+    });
+    
+    // Handle Back button press (for Undo functionality)
+    document.addEventListener('tvback', (event) => {
+        console.log('TV Back button pressed');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - try to undo move
+                const undoBtn = document.getElementById('undo-btn');
+                if (undoBtn && !undoBtn.disabled) {
+                    undoBtn.click();
+                } else {
+                    // If undo not available, go back to menu
+                    solitaireGame.uiManager.showScreen('main-menu');
+                }
+            } else {
+                // In other screens - go back to main menu
+                solitaireGame.uiManager.showScreen('main-menu');
+            }
+        }
+    });
+    
+    console.log('Fire TV remote handlers initialized');
 }
 
 /**
@@ -199,8 +272,38 @@ function checkForSavedGame() {
  */
 function restoreGame() {
     if (solitaireGame) {
-        solitaireGame.uiManager.showScreen('game-screen');
-        solitaireGame.uiManager.renderGameBoard();
+        // The game state was already loaded in checkForSavedGame()
+        // Now we need to properly restore the UI and render the board
+        try {
+            // Switch to game screen
+            solitaireGame.uiManager.showScreen('game-screen');
+            
+            // Update difficulty display
+            solitaireGame.uiManager.updateDifficultyDisplay();
+            
+            // Render the game board with the loaded state
+            solitaireGame.uiManager.renderGameBoard();
+            
+            // Update UI elements (timer, score, moves)
+            solitaireGame.uiManager.updateGameInfo();
+            
+            // Update button states
+            solitaireGame.uiManager.updateButtonStates();
+            
+            // Resume the game timer if the game was in progress
+            if (solitaireGame.gameState.startTime && !solitaireGame.gameState.gameWon) {
+                solitaireGame.uiManager.startGameTimer();
+            }
+            
+            // Refresh TV remote focus
+            solitaireGame.tvRemote.refresh();
+            
+            console.log('Game restored successfully');
+        } catch (error) {
+            console.error('Failed to restore game:', error);
+            // If restore fails, start a new game instead
+            solitaireGame.uiManager.startNewGame('medium');
+        }
     }
     
     dismissRestore();
@@ -354,6 +457,7 @@ document.addEventListener('visibilitychange', () => {
  * Debug functions (available in console)
  */
 window.debugSolitaire = {
+    // Game state functions
     getGameState: () => solitaireGame?.gameState,
     getDifficulty: () => solitaireGame?.difficultyManager?.currentDifficulty,
     getDebugInfo: () => solitaireGame?.getDebugInfo(),
@@ -362,7 +466,23 @@ window.debugSolitaire = {
     resetStats: () => solitaireGame?.resetStatistics(),
     getAnalytics: () => solitaireGame?.getGameAnalytics(),
     isWinnable: () => solitaireGame?.isGameWinnable(),
-    getAvailableMoves: () => solitaireGame?.getAvailableMovesCount()
+    getAvailableMoves: () => solitaireGame?.getAvailableMovesCount(),
+    
+    // Testing functions
+    testDistance: () => solitaireGame?.tvRemote?.testCalculateDistance(),
+    testKeyboard: () => solitaireGame?.uiManager?.testKeyboardNavigation(),
+    testNavigation: (direction) => solitaireGame?.uiManager?.testNavigationDirection(direction),
+    
+    // Quick navigation tests
+    testUp: () => solitaireGame?.uiManager?.testNavigationDirection('up'),
+    testDown: () => solitaireGame?.uiManager?.testNavigationDirection('down'),
+    testLeft: () => solitaireGame?.uiManager?.testNavigationDirection('left'),
+    testRight: () => solitaireGame?.uiManager?.testNavigationDirection('right'),
+    
+    // Helper functions
+    startGame: (difficulty = 'medium') => solitaireGame?.uiManager?.startNewGame(difficulty),
+    getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),
+    getNavState: () => solitaireGame?.uiManager?.keyboardNavigation
 };
 
 /**

@@ -29,6 +29,10 @@ class TVRemoteHandler {
             this.initKeyboardHandler();
         }
 
+        // Add TV remote mode class to body for visual indicators
+        // This enables the display of Fire TV remote button icons (⏯️, ↩️, ☰)
+        document.body.classList.add('tv-remote-mode');
+
         // Initialize focus management
         this.updateFocusableElements();
         this.setInitialFocus();
@@ -105,7 +109,11 @@ class TVRemoteHandler {
             'Escape': 'back',
             'Space': 'select',
             'Backspace': 'back',
-            'Tab': 'menu'
+            'Tab': 'menu',
+            // Additional mappings for game functions
+            'KeyH': 'play',    // H key for Hint (maps to Play button)
+            'KeyU': 'back',    // U key for Undo (maps to Back button)  
+            'KeyM': 'menu'     // M key for Menu (maps to Menu button)
         };
         return keyMap[key];
     }
@@ -166,6 +174,9 @@ class TVRemoteHandler {
                 break;
             case 'menu':
                 this.handleMenu();
+                break;
+            case 'play':
+                this.handlePlay();
                 break;
         }
     }
@@ -388,15 +399,35 @@ class TVRemoteHandler {
     }
 
     /**
-     * Calculate distance between two rectangles
+     * Calculate distance between two rectangles (edge-to-edge distance)
+     * This provides more intuitive navigation by measuring the actual gap between elements
+     * rather than center-to-center distance
      */
     calculateDistance(rect1, rect2) {
-        const centerX1 = rect1.left + rect1.width / 2;
-        const centerY1 = rect1.top + rect1.height / 2;
-        const centerX2 = rect2.left + rect2.width / 2;
-        const centerY2 = rect2.top + rect2.height / 2;
+        // Calculate horizontal distance (gap between rectangles)
+        let horizontalDistance = 0;
+        if (rect1.right < rect2.left) {
+            // rect2 is to the right of rect1
+            horizontalDistance = rect2.left - rect1.right;
+        } else if (rect2.right < rect1.left) {
+            // rect1 is to the right of rect2
+            horizontalDistance = rect1.left - rect2.right;
+        }
+        // If rectangles overlap horizontally, horizontal distance is 0
 
-        return Math.sqrt(Math.pow(centerX2 - centerX1, 2) + Math.pow(centerY2 - centerY1, 2));
+        // Calculate vertical distance (gap between rectangles)
+        let verticalDistance = 0;
+        if (rect1.bottom < rect2.top) {
+            // rect2 is below rect1
+            verticalDistance = rect2.top - rect1.bottom;
+        } else if (rect2.bottom < rect1.top) {
+            // rect1 is below rect2
+            verticalDistance = rect1.top - rect2.bottom;
+        }
+        // If rectangles overlap vertically, vertical distance is 0
+
+        // Return the Euclidean distance between the closest edges
+        return Math.sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
     }
 
     /**
@@ -429,6 +460,17 @@ class TVRemoteHandler {
             detail: { source: 'remote' }
         });
         document.dispatchEvent(menuEvent);
+    }
+
+    /**
+     * Handle play button press (used for Hint function)
+     */
+    handlePlay() {
+        // Emit custom play event for hint functionality
+        const playEvent = new CustomEvent('tvplay', {
+            detail: { source: 'remote' }
+        });
+        document.dispatchEvent(playEvent);
     }
 
     /**
@@ -517,6 +559,55 @@ class TVRemoteHandler {
      */
     removeKeyHandler(eventType, handler) {
         document.removeEventListener(`tv${eventType}`, handler);
+    }
+
+    /**
+     * Test the calculateDistance function with sample rectangles
+     * This function can be called from the browser console to verify distance calculations
+     */
+    testCalculateDistance() {
+        console.log('=== Testing calculateDistance function ===');
+        
+        // Test case 1: Two rectangles side by side (should have horizontal distance)
+        const rect1 = { left: 0, top: 0, right: 100, bottom: 50 };
+        const rect2 = { left: 150, top: 0, right: 250, bottom: 50 };
+        const distance1 = this.calculateDistance(rect1, rect2);
+        console.log(`Test 1 - Side by side rectangles: ${distance1} (expected: 50)`);
+        
+        // Test case 2: Two rectangles vertically separated (should have vertical distance)
+        const rect3 = { left: 0, top: 0, right: 100, bottom: 50 };
+        const rect4 = { left: 0, top: 100, right: 100, bottom: 150 };
+        const distance2 = this.calculateDistance(rect3, rect4);
+        console.log(`Test 2 - Vertically separated rectangles: ${distance2} (expected: 50)`);
+        
+        // Test case 3: Overlapping rectangles (should have distance 0)
+        const rect5 = { left: 0, top: 0, right: 100, bottom: 100 };
+        const rect6 = { left: 50, top: 50, right: 150, bottom: 150 };
+        const distance3 = this.calculateDistance(rect5, rect6);
+        console.log(`Test 3 - Overlapping rectangles: ${distance3} (expected: 0)`);
+        
+        // Test case 4: Diagonally separated rectangles (should use Euclidean distance)
+        const rect7 = { left: 0, top: 0, right: 50, bottom: 50 };
+        const rect8 = { left: 100, top: 100, right: 150, bottom: 150 };
+        const distance4 = this.calculateDistance(rect7, rect8);
+        const expectedDistance4 = Math.sqrt(50 * 50 + 50 * 50); // sqrt(2500 + 2500) ≈ 70.71
+        console.log(`Test 4 - Diagonally separated rectangles: ${distance4} (expected: ~${expectedDistance4.toFixed(2)})`);
+        
+        // Test case 5: Adjacent rectangles (should have distance 0)
+        const rect9 = { left: 0, top: 0, right: 100, bottom: 50 };
+        const rect10 = { left: 100, top: 0, right: 200, bottom: 50 };
+        const distance5 = this.calculateDistance(rect9, rect10);
+        console.log(`Test 5 - Adjacent rectangles: ${distance5} (expected: 0)`);
+        
+        console.log('=== Distance calculation tests completed! ===');
+        
+        return {
+            test1: { result: distance1, expected: 50, passed: distance1 === 50 },
+            test2: { result: distance2, expected: 50, passed: distance2 === 50 },
+            test3: { result: distance3, expected: 0, passed: distance3 === 0 },
+            test4: { result: distance4, expected: expectedDistance4, passed: Math.abs(distance4 - expectedDistance4) < 0.01 },
+            test5: { result: distance5, expected: 0, passed: distance5 === 0 }
+        };
     }
 
     /**

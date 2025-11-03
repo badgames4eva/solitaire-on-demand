@@ -1,86 +1,121 @@
 {
+  "_comment": "Progressive Web App (PWA) Manifest - Defines how the app appears and behaves when installed",
+  
   "name": "Solitaire On Demand",
+  "_name_comment": "Full app name displayed during installation and in app stores",
+  
   "short_name": "Solitaire",
+  "_short_name_comment": "Abbreviated name used on home screen and launcher (12 chars or less recommended)",
+  
   "description": "A progressive web app for Klondike Solitaire with TV remote support and multiple difficulty levels",
+  "_description_comment": "App description for app stores and installation prompts",
+  
   "start_url": "./index.html",
+  "_start_url_comment": "URL that loads when the app is launched from home screen",
+  
   "display": "standalone",
+  "_display_comment": "App display mode: 'standalone' hides browser UI, making it feel like a native app",
+  
   "background_color": "#2d5a27",
+  "_background_color_comment": "Background color shown during app launch before content loads",
+  
   "theme_color": "#2d5a27",
+  "_theme_color_comment": "Color of browser UI elements (status bar, etc.) when app is running",
+  
   "orientation": "landscape-primary",
+  "_orientation_comment": "Preferred screen orientation - landscape is ideal for solitaire card layout",
+  
   "categories": ["games", "entertainment"],
+  "_categories_comment": "App store categories for better discoverability",
+  
   "lang": "en-US",
+  "_lang_comment": "Primary language of the app content",
+  "_icons_comment": "App icons for different screen densities and platforms",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "Small icon for notifications and system UI"
     },
     {
       "src": "icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "Standard mobile home screen icon"
     },
     {
       "src": "icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "Medium density displays"
     },
     {
       "src": "icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "High density mobile displays"
     },
     {
       "src": "icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "iPad and tablet displays"
     },
     {
       "src": "icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "Android home screen and Chrome's minimum required size"
     },
     {
       "src": "icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "High resolution displays and splash screens"
     },
     {
       "src": "icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
+      "_comment": "Maximum size for splash screens and app stores"
     }
   ],
+  "_screenshots_comment": "App screenshots for app stores and installation prompts",
   "screenshots": [
     {
       "src": "screenshots/game-screen.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Main game screen showing Klondike Solitaire gameplay"
+      "label": "Main game screen showing Klondike Solitaire gameplay",
+      "_comment": "Primary screenshot showing the main game interface"
     },
     {
       "src": "screenshots/menu-screen.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Main menu with difficulty selection"
+      "label": "Main menu with difficulty selection",
+      "_comment": "Secondary screenshot showing the main menu and options"
     }
   ],
+  "_shortcuts_comment": "App shortcuts for quick access to specific features (right-click menu on desktop)",
   "shortcuts": [
     {
       "name": "New Easy Game",
       "short_name": "Easy",
       "description": "Start a new easy game with winnable deals",
       "url": "./index.html?difficulty=easy",
+      "_comment": "Direct shortcut to start an easy difficulty game",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -93,6 +128,7 @@
       "short_name": "Medium",
       "description": "Start a new medium difficulty game",
       "url": "./index.html?difficulty=medium",
+      "_comment": "Direct shortcut to start a medium difficulty game",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -105,6 +141,7 @@
       "short_name": "Hard",
       "description": "Start a new hard game with draw-3 rules",
       "url": "./index.html?difficulty=hard",
+      "_comment": "Direct shortcut to start a hard difficulty game",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -117,6 +154,7 @@
       "short_name": "Stats",
       "description": "View game statistics and achievements",
       "url": "./index.html?screen=stats",
+      "_comment": "Direct shortcut to view game statistics",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -126,10 +164,15 @@
     }
   ],
   "prefer_related_applications": false,
+  "_prefer_related_applications_comment": "Don't prefer native apps over this PWA",
+  
   "edge_side_panel": {
-    "preferred_width": 400
+    "preferred_width": 400,
+    "_comment": "Microsoft Edge side panel configuration for compact viewing"
   },
+  
   "launch_handler": {
-    "client_mode": "focus-existing"
+    "client_mode": "focus-existing",
+    "_comment": "When app is launched, focus existing window instead of opening new one"
   }
 }

@@ -1,50 +1,55 @@
 /**
  * Difficulty management system for Solitaire On Demand
- * Handles different game modes and their specific rules
+ * Handles different game modes and their specific rules, features, and restrictions
  */
 class DifficultyManager {
+    /**
+     * Initialize the difficulty manager with predefined difficulty levels
+     * Each difficulty has different rules, features, and scoring multipliers
+     */
     constructor() {
+        // Define all available difficulty levels with their specific settings
         this.difficulties = {
             easy: {
                 name: 'Easy',
                 description: 'Winnable deals with helpful features',
-                drawCount: 1,
+                drawCount: 1, // Draw 1 card at a time from stock
                 features: {
-                    winnableDeals: true,
-                    showHints: true,
-                    autoComplete: true,
-                    undoLimit: -1, // Unlimited
-                    scoreMultiplier: 0.8
+                    winnableDeals: true,    // Guarantees solvable games
+                    showHints: true,        // Hint system available
+                    autoComplete: true,     // Auto-complete when possible
+                    undoLimit: -1,          // Unlimited undo moves
+                    scoreMultiplier: 0.8    // Reduced scoring due to easier gameplay
                 }
             },
             medium: {
                 name: 'Medium',
                 description: 'Classic Klondike Solitaire',
-                drawCount: 1,
+                drawCount: 1, // Draw 1 card at a time from stock
                 features: {
-                    winnableDeals: false,
-                    showHints: true,
-                    autoComplete: true,
-                    undoLimit: 10,
-                    scoreMultiplier: 1.0
+                    winnableDeals: false,   // Random deals (may not be solvable)
+                    showHints: true,        // Hint system available
+                    autoComplete: true,     // Auto-complete when possible
+                    undoLimit: 10,          // Limited to 10 undo moves
+                    scoreMultiplier: 1.0    // Standard scoring
                 }
             },
             hard: {
                 name: 'Hard',
                 description: 'Draw 3 cards with challenging layouts',
-                drawCount: 3,
+                drawCount: 3, // Draw 3 cards at a time from stock (Vegas rules)
                 features: {
-                    winnableDeals: false,
-                    showHints: false,
-                    autoComplete: false,
-                    undoLimit: 3,
-                    scoreMultiplier: 1.5
+                    winnableDeals: false,   // Random deals with buried important cards
+                    showHints: false,       // No hint system
+                    autoComplete: false,    // No auto-complete
+                    undoLimit: 3,           // Very limited undo moves
+                    scoreMultiplier: 1.5    // Bonus scoring for increased difficulty
                 }
             }
         };
 
-        this.currentDifficulty = 'medium';
-        this.hintSystem = new HintSystem();
+        this.currentDifficulty = 'medium'; // Default difficulty level
+        this.hintSystem = new HintSystem(); // Initialize the hint analysis system
     }
 
     /**

@@ -1,35 +1,49 @@
 /**
  * UI Manager for Solitaire On Demand
- * Handles all user interface interactions and updates
+ * Handles all user interface interactions, rendering, and screen management
+ * Coordinates between game state, user input, and visual representation
  */
 class UIManager {
+    /**
+     * Create the UI manager with references to core game systems
+     * @param {GameState} gameState - The game state manager
+     * @param {DifficultyManager} difficultyManager - The difficulty settings manager
+     * @param {TVRemoteHandler} tvRemote - The TV remote navigation handler
+     */
     constructor(gameState, difficultyManager, tvRemote) {
-        this.gameState = gameState;
-        this.difficultyManager = difficultyManager;
-        this.tvRemote = tvRemote;
-        this.currentScreen = 'main-menu';
-        this.selectedCards = [];
-        this.selectedSource = null;
-        this.gameTimer = null;
-        this.animationQueue = [];
-        this.isAnimating = false;
-        this.focusedElement = null;
+        // Core system references
+        this.gameState = gameState;                    // Access to game logic and state
+        this.difficultyManager = difficultyManager;    // Access to difficulty rules
+        this.tvRemote = tvRemote;                     // Access to navigation system
+        
+        // UI state management
+        this.currentScreen = 'main-menu';             // Currently active screen
+        this.selectedCards = [];                      // Cards currently selected for moving
+        this.selectedSource = null;                   // Where selected cards came from
+        
+        // Animation and timing
+        this.gameTimer = null;                        // Timer for game duration tracking
+        this.animationQueue = [];                     // Queue of animations to play
+        this.isAnimating = false;                     // Whether animations are currently playing
+        
+        // Navigation state for keyboard/TV remote
+        this.focusedElement = null;                   // Currently focused UI element
         this.keyboardNavigation = {
-            currentColumn: 0,
-            currentRow: 0,
-            currentArea: 'tableau' // tableau, foundation, stock, waste
+            currentColumn: 0,                         // Current column in tableau (0-6)
+            currentRow: 0,                           // Current row within column
+            currentArea: 'tableau'                   // Current game area: tableau, foundation, stock, waste, controls
         };
         
-        this.init();
+        this.init(); // Initialize the UI system
     }
 
     /**
-     * Initialize the UI manager
+     * Initialize the UI manager by setting up event listeners and showing the main menu
      */
     init() {
-        this.setupEventListeners();
-        this.showScreen('main-menu');
-        this.loadSettings();
+        this.setupEventListeners(); // Set up all UI event handlers
+        this.showScreen('main-menu'); // Start on the main menu screen
+        this.loadSettings(); // Load user preferences from localStorage
     }
 
     /**
@@ -62,11 +76,6 @@ class UIManager {
             } else if (event.target.closest('.tableau-column, .foundation-pile, .waste-pile')) {
                 this.handleAreaClick(event.target.closest('.tableau-column, .foundation-pile, .waste-pile'));
             }
-        });
-
-        // Keyboard navigation handlers
-        document.addEventListener('keydown', (event) => {
-            this.handleKeyboard(event);
         });
 
         // Long press handlers for TV remote
@@ -223,6 +232,7 @@ class UIManager {
 
     /**
      * Navigate left in current area
+     * Left/Right should allow navigation between foundation and stock/waste areas
      */
     navigateLeft() {
         const nav = this.keyboardNavigation;
@@ -237,19 +247,38 @@ class UIManager {
                 }
                 break;
             case 'foundation':
-                nav.currentColumn = Math.max(0, nav.currentColumn - 1);
+                if (nav.currentColumn > 0) {
+                    // Move within foundation piles
+                    nav.currentColumn--;
+                } else {
+                    // From leftmost foundation pile, go to waste area
+                    nav.currentArea = 'waste';
+                    nav.currentColumn = 0;
+                    nav.currentRow = 0;
+                }
                 break;
             case 'stock':
-                nav.currentArea = 'waste';
+                // From stock, go to rightmost foundation pile
+                nav.currentArea = 'foundation';
+                nav.currentColumn = 3; // Rightmost foundation pile
+                nav.currentRow = 0;
                 break;
             case 'waste':
+                // From waste, go to stock
                 nav.currentArea = 'stock';
+                nav.currentColumn = 0;
+                nav.currentRow = 0;
+                break;
+            case 'controls':
+                // Move between control buttons (Hint, Undo, Menu)
+                nav.currentColumn = Math.max(0, nav.currentColumn - 1);
                 break;
         }
     }
 
     /**
      * Navigate right in current area
+     * Left/Right should allow navigation between foundation and stock/waste areas
      */
     navigateRight() {
         const nav = this.keyboardNavigation;
@@ -264,57 +293,142 @@ class UIManager {
                 }
                 break;
             case 'foundation':
-                nav.currentColumn = Math.min(3, nav.currentColumn + 1);
+                if (nav.currentColumn < 3) {
+                    // Move within foundation piles
+                    nav.currentColumn++;
+                } else {
+                    // From rightmost foundation pile, go to stock area
+                    nav.currentArea = 'stock';
+                    nav.currentColumn = 0;
+                    nav.currentRow = 0;
+                }
                 break;
             case 'stock':
+                // From stock, go to waste
                 nav.currentArea = 'waste';
+                nav.currentColumn = 0;
+                nav.currentRow = 0;
                 break;
             case 'waste':
-                nav.currentArea = 'stock';
+                // From waste, go to leftmost foundation pile
+                nav.currentArea = 'foundation';
+                nav.currentColumn = 0; // Leftmost foundation pile
+                nav.currentRow = 0;
+                break;
+            case 'controls':
+                // Move between control buttons (Hint, Undo, Menu)
+                nav.currentColumn = Math.min(2, nav.currentColumn + 1);
                 break;
         }
     }
 
     /**
-     * Navigate up in current area
+     * Navigate up in current area using distance-based navigation when possible
      */
     navigateUp() {
         const nav = this.keyboardNavigation;
         
+        // Get current focused element
+        const currentElement = this.getCurrentFocusElement();
+        if (!currentElement) {
+            // Fallback to hardcoded navigation
+            this.navigateUpFallback();
+            return;
+        }
+        
+        // Try to find the best element above using distance calculation
+        const bestElement = this.findBestElementInDirection(currentElement, 'up');
+        if (bestElement) {
+            this.focusElementAndUpdateNavigation(bestElement);
+        } else {
+            // Fallback to hardcoded navigation
+            this.navigateUpFallback();
+        }
+    }
+
+    /**
+     * Navigate down in current area using distance-based navigation when possible
+     */
+    navigateDown() {
+        const nav = this.keyboardNavigation;
+        
+        // Get current focused element
+        const currentElement = this.getCurrentFocusElement();
+        if (!currentElement) {
+            // Fallback to hardcoded navigation
+            this.navigateDownFallback();
+            return;
+        }
+        
+        // Try to find the best element below using distance calculation
+        const bestElement = this.findBestElementInDirection(currentElement, 'down');
+        if (bestElement) {
+            this.focusElementAndUpdateNavigation(bestElement);
+        } else {
+            // Fallback to hardcoded navigation
+            this.navigateDownFallback();
+        }
+    }
+
+    /**
+     * Fallback navigation up using hardcoded logic
+     * Up/Down should navigate between control buttons and game areas
+     */
+    navigateUpFallback() {
+        const nav = this.keyboardNavigation;
+        
         switch (nav.currentArea) {
             case 'tableau':
-                // From tableau, go directly to stock/waste area
-                nav.currentArea = 'stock';
-                nav.currentColumn = 0;
+                // From tableau, go to foundation area above it
+                nav.currentArea = 'foundation';
+                // Map tableau columns to foundation piles (0-6 tableau -> 0-3 foundation)
+                nav.currentColumn = Math.min(nav.currentColumn, 3);
                 nav.currentRow = 0;
                 break;
             case 'foundation':
-                // Stay in foundation, can't go higher
+                // From foundation, go to control buttons (Hint, Undo, Menu)
+                nav.currentArea = 'controls';
+                // Map foundation column to control button (0-3 foundation -> 0-2 controls)
+                nav.currentColumn = Math.min(nav.currentColumn, 2);
+                nav.currentRow = 0;
                 break;
             case 'stock':
-                // From stock, go to foundation
-                nav.currentArea = 'foundation';
-                nav.currentColumn = 0;
+                // From stock, go to control buttons
+                nav.currentArea = 'controls';
+                nav.currentColumn = 0; // Go to Hint button
+                nav.currentRow = 0;
                 break;
             case 'waste':
-                // From waste, go to foundation
-                nav.currentArea = 'foundation';
-                nav.currentColumn = 1;
+                // From waste, go to control buttons
+                nav.currentArea = 'controls';
+                nav.currentColumn = 1; // Go to Undo button
+                nav.currentRow = 0;
+                break;
+            case 'controls':
+                // Stay in controls, can't go higher (this is the top area)
                 break;
         }
     }
 
     /**
-     * Navigate down in current area
+     * Fallback navigation down using hardcoded logic
+     * Up/Down should navigate between control buttons and game areas
      */
-    navigateDown() {
+    navigateDownFallback() {
         const nav = this.keyboardNavigation;
         
         switch (nav.currentArea) {
+            case 'controls':
+                // From controls, go to foundation area based on button position
+                nav.currentArea = 'foundation';
+                nav.currentColumn = Math.min(nav.currentColumn, 3);
+                nav.currentRow = 0;
+                break;
             case 'foundation':
-                // From foundation, go to tableau
+                // From foundation, go to tableau below it
                 nav.currentArea = 'tableau';
-                nav.currentColumn = Math.min(nav.currentColumn, 6);
+                // Map foundation piles to tableau columns (0-3 foundation -> 0-6 tableau)
+                nav.currentColumn = Math.min(nav.currentColumn + 3, 6);
                 const column = this.gameState.tableau[nav.currentColumn];
                 nav.currentRow = Math.max(0, column.length - 1);
                 break;
@@ -322,13 +436,252 @@ class UIManager {
                 // In tableau, stay in tableau (no vertical movement within columns)
                 break;
             case 'stock':
-            case 'waste':
-                // From stock/waste, go to tableau
-                nav.currentArea = 'tableau';
-                nav.currentColumn = 0;
-                const firstColumn = this.gameState.tableau[0];
-                nav.currentRow = Math.max(0, firstColumn.length - 1);
+                // From stock (menu area), go to foundation area
+                nav.currentArea = 'foundation';
+                nav.currentColumn = 0; // Go to first foundation pile
+                nav.currentRow = 0;
                 break;
+            case 'waste':
+                // From waste (menu area), go to foundation area
+                nav.currentArea = 'foundation';
+                nav.currentColumn = 1; // Go to second foundation pile
+                nav.currentRow = 0;
+                break;
+        }
+    }
+
+    /**
+     * Get the currently focused DOM element
+     */
+    getCurrentFocusElement() {
+        const nav = this.keyboardNavigation;
+        
+        switch (nav.currentArea) {
+            case 'tableau':
+                const columnElement = document.querySelector(`[data-column="${nav.currentColumn}"]`);
+                if (columnElement) {
+                    const cards = columnElement.querySelectorAll('.card');
+                    return cards[nav.currentRow] || columnElement;
+                }
+                return columnElement;
+            case 'foundation':
+                const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+                return document.querySelector(`[data-suit="${suits[nav.currentColumn]}"]`);
+            case 'stock':
+                return document.querySelector('.stock-pile');
+            case 'waste':
+                return document.querySelector('.waste-pile');
+            case 'controls':
+                // Control buttons: 0=Hint, 1=Undo, 2=Menu
+                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn'];
+                return document.getElementById(controlButtons[nav.currentColumn]);
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Find the best element in a given direction using distance calculation
+     */
+    findBestElementInDirection(currentElement, direction) {
+        if (!currentElement) return null;
+        
+        const currentRect = currentElement.getBoundingClientRect();
+        let bestCandidate = null;
+        let bestDistance = Infinity;
+        
+        // Get all possible focusable elements in the game area
+        const candidates = this.getAllFocusableGameElements();
+        
+        for (const element of candidates) {
+            if (element === currentElement) continue;
+            
+            const rect = element.getBoundingClientRect();
+            let isInDirection = false;
+            
+            // Check if element is in the correct direction
+            switch (direction) {
+                case 'up':
+                    isInDirection = rect.bottom <= currentRect.top;
+                    break;
+                case 'down':
+                    isInDirection = rect.top >= currentRect.bottom;
+                    break;
+                case 'left':
+                    isInDirection = rect.right <= currentRect.left;
+                    break;
+                case 'right':
+                    isInDirection = rect.left >= currentRect.right;
+                    break;
+            }
+            
+            if (isInDirection) {
+                // Use the TV remote's improved distance calculation
+                const distance = this.tvRemote.calculateDistance(currentRect, rect);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestCandidate = element;
+                }
+            }
+        }
+        
+        return bestCandidate;
+    }
+
+    /**
+     * Get all focusable game elements (cards, piles, etc.)
+     */
+    getAllFocusableGameElements() {
+        const elements = [];
+        
+        // Add tableau columns and cards
+        for (let col = 0; col < 7; col++) {
+            const columnElement = document.querySelector(`[data-column="${col}"]`);
+            if (columnElement) {
+                elements.push(columnElement);
+                const cards = columnElement.querySelectorAll('.card');
+                elements.push(...cards);
+            }
+        }
+        
+        // Add foundation piles
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        for (const suit of suits) {
+            const foundationElement = document.querySelector(`[data-suit="${suit}"]`);
+            if (foundationElement) {
+                elements.push(foundationElement);
+            }
+        }
+        
+        // Add stock and waste piles
+        const stockElement = document.querySelector('.stock-pile');
+        const wasteElement = document.querySelector('.waste-pile');
+        if (stockElement) elements.push(stockElement);
+        if (wasteElement) elements.push(wasteElement);
+        
+        return elements.filter(el => {
+            const style = window.getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+    }
+
+    /**
+     * Handle TV remote back button
+     */
+    handleBackButton() {
+        switch (this.currentScreen) {
+            case 'game-screen':
+                this.showScreen('main-menu');
+                break;
+            case 'stats-screen':
+            case 'settings-screen':
+                this.showScreen('main-menu');
+                break;
+            case 'main-menu':
+                // Could show exit confirmation
+                break;
+        }
+    }
+
+    /**
+     * Handle TV remote menu button
+     */
+    handleMenuButton() {
+        // Show game menu or settings based on current screen
+        if (this.currentScreen === 'game-screen') {
+            this.showScreen('settings-screen');
+        } else {
+            this.showScreen('main-menu');
+        }
+    }
+
+    /**
+     * Handle long select (long press on TV remote select button)
+     */
+    handleLongSelect(element) {
+        // Show additional information or context menu for the focused element
+        if (element && element.classList.contains('card')) {
+            this.showCardInfo(element);
+        }
+    }
+
+    /**
+     * Show screen by ID and manage screen transitions
+     */
+    showScreen(screenId) {
+        // Hide all screens
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        
+        // Show target screen
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+            this.currentScreen = screenId;
+            
+            // Initialize screen-specific functionality
+            switch (screenId) {
+                case 'game-screen':
+                    this.renderGameBoard();
+                    this.initializeKeyboardNavigation();
+                    this.startGameTimer();
+                    break;
+                case 'stats-screen':
+                    this.updateStatsDisplay();
+                    break;
+                case 'settings-screen':
+                    this.loadSettings();
+                    break;
+            }
+            
+            // Refresh TV remote navigation for new screen
+            setTimeout(() => {
+                this.tvRemote.refresh();
+            }, 100);
+        }
+    }
+
+    /**
+     * Focus an element and update navigation state accordingly
+     */
+    focusElementAndUpdateNavigation(element) {
+        // Determine what type of element this is and update navigation state
+        if (element.matches('[data-column]')) {
+            // Tableau column
+            const column = parseInt(element.dataset.column);
+            this.keyboardNavigation.currentArea = 'tableau';
+            this.keyboardNavigation.currentColumn = column;
+            this.keyboardNavigation.currentRow = Math.max(0, this.gameState.tableau[column].length - 1);
+        } else if (element.matches('[data-suit]')) {
+            // Foundation pile
+            const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+            const suit = element.dataset.suit;
+            const column = suits.indexOf(suit);
+            this.keyboardNavigation.currentArea = 'foundation';
+            this.keyboardNavigation.currentColumn = column;
+            this.keyboardNavigation.currentRow = 0;
+        } else if (element.matches('.stock-pile')) {
+            // Stock pile
+            this.keyboardNavigation.currentArea = 'stock';
+            this.keyboardNavigation.currentColumn = 0;
+            this.keyboardNavigation.currentRow = 0;
+        } else if (element.matches('.waste-pile')) {
+            // Waste pile
+            this.keyboardNavigation.currentArea = 'waste';
+            this.keyboardNavigation.currentColumn = 0;
+            this.keyboardNavigation.currentRow = 0;
+        } else if (element.matches('.card')) {
+            // Individual card - find its parent column
+            const columnElement = element.closest('[data-column]');
+            if (columnElement) {
+                const column = parseInt(columnElement.dataset.column);
+                const cards = columnElement.querySelectorAll('.card');
+                const cardIndex = Array.from(cards).indexOf(element);
+                this.keyboardNavigation.currentArea = 'tableau';
+                this.keyboardNavigation.currentColumn = column;
+                this.keyboardNavigation.currentRow = cardIndex;
+            }
         }
     }
 
@@ -377,6 +730,20 @@ class UIManager {
             case 'waste':
                 this.handleWasteClick();
                 break;
+            case 'controls':
+                // Activate control buttons: 0=Hint, 1=Undo, 2=Menu
+                switch (nav.currentColumn) {
+                    case 0: // Hint button
+                        this.showHint();
+                        break;
+                    case 1: // Undo button
+                        this.undoMove();
+                        break;
+                    case 2: // Menu button
+                        this.showScreen('main-menu');
+                        break;
+                }
+                break;
         }
     }
 
@@ -419,6 +786,11 @@ class UIManager {
             case 'waste':
                 focusElement = document.querySelector('.waste-pile');
                 break;
+            case 'controls':
+                // Control buttons: 0=Hint, 1=Undo, 2=Menu
+                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn'];
+                focusElement = document.getElementById(controlButtons[nav.currentColumn]);
+                break;
         }
 
         if (focusElement) {
@@ -453,77 +825,6 @@ class UIManager {
         }
     }
 
-    /**
-     * Handle TV remote back button
-     */
-    handleBackButton() {
-        switch (this.currentScreen) {
-            case 'game-screen':
-                this.showScreen('main-menu');
-                break;
-            case 'stats-screen':
-            case 'settings-screen':
-                this.showScreen('main-menu');
-                break;
-            case 'main-menu':
-                // Could show exit confirmation
-                break;
-        }
-    }
-
-    /**
-     * Handle TV remote menu button
-     */
-    handleMenuButton() {
-        if (this.currentScreen === 'game-screen') {
-            this.showScreen('main-menu');
-        }
-    }
-
-    /**
-     * Handle long select for context actions
-     */
-    handleLongSelect(element) {
-        if (element.classList.contains('card')) {
-            // Show card info or context menu
-            this.showCardInfo(element);
-        }
-    }
-
-    /**
-     * Show a specific screen
-     */
-    showScreen(screenId) {
-        // Hide all screens
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-
-        // Show target screen
-        const targetScreen = document.getElementById(screenId);
-        if (targetScreen) {
-            targetScreen.classList.add('active');
-            this.currentScreen = screenId;
-
-            // Update TV remote focus
-            this.tvRemote.refresh();
-
-            // Screen-specific initialization
-            switch (screenId) {
-                case 'game-screen':
-                    this.startGameTimer();
-                    this.renderGameBoard();
-                    this.initializeKeyboardNavigation();
-                    break;
-                case 'stats-screen':
-                    this.updateStatsDisplay();
-                    break;
-                case 'main-menu':
-                    this.stopGameTimer();
-                    break;
-            }
-        }
-    }
 
     /**
      * Initialize keyboard navigation for game screen
@@ -1242,6 +1543,138 @@ class UIManager {
             case 13: return 'King';
             default: return rank;
         }
+    }
+
+    /**
+     * Test keyboard navigation and distance calculation
+     * This function can be called from the browser console to test navigation
+     */
+    testKeyboardNavigation() {
+        console.log('=== Testing Keyboard Navigation ===');
+        
+        // First test the distance calculation function
+        console.log('Testing distance calculation...');
+        const distanceTests = this.tvRemote.testCalculateDistance();
+        
+        // Test keyboard navigation if we're in game screen
+        if (this.currentScreen !== 'game-screen') {
+            console.log('Not in game screen. Starting a new game for testing...');
+            this.startNewGame('medium');
+        }
+        
+        console.log('Current navigation state:', this.keyboardNavigation);
+        
+        // Test getting current focus element
+        const currentElement = this.getCurrentFocusElement();
+        console.log('Current focused element:', currentElement);
+        
+        if (currentElement) {
+            const rect = currentElement.getBoundingClientRect();
+            console.log('Current element rect:', rect);
+        }
+        
+        // Test getting all focusable elements
+        const allElements = this.getAllFocusableGameElements();
+        console.log(`Found ${allElements.length} focusable game elements`);
+        
+        // Test finding elements in different directions
+        if (currentElement) {
+            console.log('Testing direction finding...');
+            
+            const upElement = this.findBestElementInDirection(currentElement, 'up');
+            const downElement = this.findBestElementInDirection(currentElement, 'down');
+            const leftElement = this.findBestElementInDirection(currentElement, 'left');
+            const rightElement = this.findBestElementInDirection(currentElement, 'right');
+            
+            console.log('Best element UP:', upElement);
+            console.log('Best element DOWN:', downElement);
+            console.log('Best element LEFT:', leftElement);
+            console.log('Best element RIGHT:', rightElement);
+        }
+        
+        // Test navigation state updates
+        console.log('Testing navigation state updates...');
+        const originalState = { ...this.keyboardNavigation };
+        
+        // Test moving to different areas
+        this.keyboardNavigation.currentArea = 'foundation';
+        this.keyboardNavigation.currentColumn = 1;
+        this.updateKeyboardFocus();
+        console.log('Moved to foundation area:', this.keyboardNavigation);
+        
+        this.keyboardNavigation.currentArea = 'stock';
+        this.updateKeyboardFocus();
+        console.log('Moved to stock area:', this.keyboardNavigation);
+        
+        this.keyboardNavigation.currentArea = 'waste';
+        this.updateKeyboardFocus();
+        console.log('Moved to waste area:', this.keyboardNavigation);
+        
+        // Restore original state
+        this.keyboardNavigation = originalState;
+        this.updateKeyboardFocus();
+        console.log('Restored original state:', this.keyboardNavigation);
+        
+        console.log('=== Keyboard Navigation Tests Completed ===');
+        
+        return {
+            distanceTests,
+            currentScreen: this.currentScreen,
+            navigationState: this.keyboardNavigation,
+            focusableElementsCount: allElements.length,
+            currentElement: currentElement ? currentElement.tagName + (currentElement.className ? '.' + currentElement.className : '') : null
+        };
+    }
+
+    /**
+     * Test navigation in a specific direction
+     * This simulates pressing an arrow key and shows what happens
+     */
+    testNavigationDirection(direction) {
+        console.log(`=== Testing Navigation: ${direction.toUpperCase()} ===`);
+        
+        const beforeState = { ...this.keyboardNavigation };
+        const beforeElement = this.getCurrentFocusElement();
+        
+        console.log('Before navigation:', beforeState);
+        console.log('Before element:', beforeElement);
+        
+        // Perform navigation
+        switch (direction.toLowerCase()) {
+            case 'up':
+                this.navigateUp();
+                break;
+            case 'down':
+                this.navigateDown();
+                break;
+            case 'left':
+                this.navigateLeft();
+                break;
+            case 'right':
+                this.navigateRight();
+                break;
+            default:
+                console.log('Invalid direction. Use: up, down, left, right');
+                return;
+        }
+        
+        this.updateKeyboardFocus();
+        
+        const afterState = { ...this.keyboardNavigation };
+        const afterElement = this.getCurrentFocusElement();
+        
+        console.log('After navigation:', afterState);
+        console.log('After element:', afterElement);
+        
+        const moved = JSON.stringify(beforeState) !== JSON.stringify(afterState);
+        console.log('Navigation result:', moved ? 'MOVED' : 'NO MOVEMENT');
+        
+        return {
+            direction,
+            moved,
+            before: { state: beforeState, element: beforeElement },
+            after: { state: afterState, element: afterElement }
+        };
     }
 
     /**

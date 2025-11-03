@@ -1,12 +1,18 @@
 /**
- * Card class representing a playing card
+ * Card class representing a playing card in the solitaire game
+ * Each card has a rank (1-13), suit, face state, and unique identifier
  */
 class Card {
+    /**
+     * Create a new playing card
+     * @param {number} rank - Card rank from 1-13 (Ace=1, Jack=11, Queen=12, King=13)
+     * @param {string} suit - Card suit: 'hearts', 'diamonds', 'clubs', or 'spades'
+     */
     constructor(rank, suit) {
-        this.rank = rank; // 1-13 (Ace=1, Jack=11, Queen=12, King=13)
-        this.suit = suit; // 'hearts', 'diamonds', 'clubs', 'spades'
-        this.faceUp = false;
-        this.id = `${suit}-${rank}`;
+        this.rank = rank; // Numeric value: Ace=1, 2-10=face value, Jack=11, Queen=12, King=13
+        this.suit = suit; // String identifier for the suit
+        this.faceUp = false; // Whether the card is currently face up (visible to player)
+        this.id = `${suit}-${rank}`; // Unique identifier for this specific card
     }
 
     /**

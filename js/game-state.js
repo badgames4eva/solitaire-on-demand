@@ -1,33 +1,53 @@
 /**
  * GameState class for managing the current state of the solitaire game
+ * Tracks all game data including card positions, score, timing, and move history
  */
 class GameState {
+    /**
+     * Initialize a new game state with default values
+     */
     constructor() {
-        this.reset();
+        this.reset(); // Set all properties to their initial state
     }
 
     /**
-     * Reset the game state to initial values
+     * Reset the game state to initial values for a new game
+     * Clears all card positions, resets counters, and initializes empty arrays
      */
     reset() {
-        this.tableau = [[], [], [], [], [], [], []]; // 7 columns
+        // Card layout areas
+        this.tableau = [[], [], [], [], [], [], []]; // 7 columns for main playing area
         this.foundation = [[], [], [], []]; // 4 foundation piles (hearts, diamonds, clubs, spades)
-        this.stock = [];
-        this.waste = [];
-        this.selectedCards = [];
-        this.selectedSource = null;
-        this.difficulty = 'medium';
-        this.drawCount = 1; // Number of cards to draw from stock (1 for medium, 3 for hard)
-        this.moves = 0;
-        this.score = 0;
-        this.startTime = null;
-        this.endTime = null;
-        this.gameWon = false;
-        this.gameLost = false;
-        this.stockCycles = 0;
-        this.emptyColumnsCreated = 0;
-        this.moveHistory = [];
-        this.autoCompleteAvailable = false;
+        this.stock = []; // Remaining cards to draw from (face down)
+        this.waste = []; // Cards drawn from stock (face up)
+        
+        // Selection state for moving cards
+        this.selectedCards = []; // Currently selected cards for moving
+        this.selectedSource = null; // Where the selected cards came from
+        
+        // Game configuration
+        this.difficulty = 'medium'; // Current difficulty level
+        this.drawCount = 1; // Number of cards to draw from stock (1 for easy/medium, 3 for hard)
+        
+        // Game progress tracking
+        this.moves = 0; // Total number of moves made
+        this.score = 0; // Current game score
+        this.startTime = null; // When the game started (timestamp)
+        this.endTime = null; // When the game ended (timestamp)
+        
+        // Game state flags
+        this.gameWon = false; // Whether the player has won
+        this.gameLost = false; // Whether the game is in an unwinnable state
+        
+        // Statistics tracking
+        this.stockCycles = 0; // How many times the stock has been recycled
+        this.emptyColumnsCreated = 0; // Number of empty tableau columns created
+        
+        // Undo functionality
+        this.moveHistory = []; // History of moves for undo feature
+        
+        // Auto-complete availability
+        this.autoCompleteAvailable = false; // Whether auto-complete can be triggered
     }
 
     /**
@@ -60,6 +80,13 @@ class GameState {
         this.waste = deal.waste;
 
         this.checkAutoComplete();
+        
+        // Create initial snapshot for undo functionality
+        // This allows undoing the very first move
+        this.recordMove({
+            type: 'initial-state',
+            description: 'Game started'
+        });
     }
 
     /**

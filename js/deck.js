@@ -1,20 +1,27 @@
 /**
  * Deck class for managing a standard 52-card deck
+ * Handles deck creation, shuffling, and dealing for different game modes
  */
 class Deck {
+    /**
+     * Create a new deck and initialize it with 52 cards
+     */
     constructor() {
-        this.cards = [];
-        this.createDeck();
+        this.cards = []; // Array to hold all 52 cards
+        this.createDeck(); // Populate the deck with cards
     }
 
     /**
-     * Create a standard 52-card deck
+     * Create a standard 52-card deck (13 ranks × 4 suits)
+     * Each suit contains cards from Ace (1) through King (13)
      */
     createDeck() {
-        const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades']; // All four suits
         const ranks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Ace=1, Jack=11, Queen=12, King=13
 
-        this.cards = [];
+        this.cards = []; // Clear any existing cards
+        
+        // Create one card for each combination of suit and rank
         for (const suit of suits) {
             for (const rank of ranks) {
                 this.cards.push(new Card(rank, suit));
