@@ -70,6 +70,20 @@ body {
     gap: 1rem; /* Space between buttons */
 }
 
+/* Menu section headings */
+.menu-options h3 {
+    color: #ffdd44;
+    font-size: 1.3rem;
+    margin: 1.5rem 0 0.5rem 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 221, 68, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.menu-options h3:first-child {
+    margin-top: 0;
+}
+
 /* Individual menu button styling */
 .menu-btn {
     padding: 1rem 2rem;
@@ -165,7 +179,7 @@ body.tv-remote-mode #hint-btn::after {
 }
 
 body.tv-remote-mode #undo-btn::after {
-    content: "↩️"; /* Return/undo arrow icon */
+    content: "⏪"; /* Rewind icon for undo */
 }
 
 body.tv-remote-mode #menu-btn::after {
@@ -310,14 +324,61 @@ body.tv-remote-mode .control-btn.focused::before {
    TABLEAU AREA (Bottom, spans both columns)
    ======================================== */
 
-/* Main playing area with seven columns */
+/* Main playing area with seven columns (Klondike) or ten columns (Spider) */
 .tableau-area {
     grid-column: 1 / -1; /* Span both grid columns */
     display: flex;
     gap: 0.5rem; /* Small gap between columns */
-    justify-content: center; /* Center the seven columns */
+    justify-content: center; /* Center the columns */
     align-items: flex-start;
     height: 100%; /* Fill remaining grid space */
+}
+
+/* Spider solitaire layout adjustments */
+body.spider-mode .tableau-area {
+    gap: 0.3rem; /* Smaller gap for 10 columns */
+}
+
+body.spider-mode .tableau-column,
+body.spider-mode .card {
+    width: 70px; /* Narrower cards for 10 columns */
+    height: 96px;
+}
+
+/* Hide foundation and waste areas in Spider mode */
+body.spider-mode .foundation-area,
+body.spider-mode .waste-pile {
+    display: none;
+}
+
+/* Adjust stock area for Spider mode */
+body.spider-mode .stock-area {
+    justify-content: center;
+}
+
+/* Spider completed sequences display */
+.completed-sequences {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 1000;
+}
+
+.completed-sequence {
+    width: 60px;
+    height: 82px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #ffdd44;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffdd44;
+    font-weight: bold;
+    font-size: 0.9rem;
 }
 
 /* Individual tableau column */

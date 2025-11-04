@@ -112,7 +112,7 @@ class TVRemoteHandler {
             'Tab': 'menu',
             // Additional mappings for game functions
             'KeyH': 'play',    // H key for Hint (maps to Play button)
-            'KeyU': 'back',    // U key for Undo (maps to Back button)  
+            'KeyU': 'rewind',  // U key for Undo (maps to Rewind button)  
             'KeyM': 'menu'     // M key for Menu (maps to Menu button)
         };
         return keyMap[key];
@@ -176,7 +176,11 @@ class TVRemoteHandler {
                 this.handleMenu();
                 break;
             case 'play':
+            case 'playpause':
                 this.handlePlay();
+                break;
+            case 'rewind':
+                this.handleRewind();
                 break;
         }
     }
@@ -471,6 +475,17 @@ class TVRemoteHandler {
             detail: { source: 'remote' }
         });
         document.dispatchEvent(playEvent);
+    }
+
+    /**
+     * Handle rewind button press (used for Undo function)
+     */
+    handleRewind() {
+        // Emit custom rewind event for undo functionality
+        const rewindEvent = new CustomEvent('tvrewind', {
+            detail: { source: 'remote' }
+        });
+        document.dispatchEvent(rewindEvent);
     }
 
     /**
