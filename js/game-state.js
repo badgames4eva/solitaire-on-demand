@@ -356,8 +356,15 @@ class GameState {
                            movingCard.canPlaceOnTableau(targetCard, 'spider');
                 }
             } else {
-                // Klondike rules
-                return movingCard.canPlaceOnTableau(targetCard, 'klondike');
+                // Klondike rules: check both placement and sequence validity
+                if (cards.length === 1) {
+                    // Single card move
+                    return movingCard.canPlaceOnTableau(targetCard, 'klondike');
+                } else {
+                    // Multiple card move: must form valid Klondike sequence
+                    return this.isValidKlondikeSequence(cards) && 
+                           movingCard.canPlaceOnTableau(targetCard, 'klondike');
+                }
             }
         }
 
@@ -377,6 +384,26 @@ class GameState {
             
             // Must be same suit and descending rank
             if (currentCard.suit !== firstCard.suit || 
+                currentCard.rank !== previousCard.rank - 1) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Check if cards form a valid Klondike sequence (alternating colors, descending order)
+     */
+    isValidKlondikeSequence(cards) {
+        if (cards.length <= 1) return true;
+
+        for (let i = 1; i < cards.length; i++) {
+            const currentCard = cards[i];
+            const previousCard = cards[i - 1];
+            
+            // Must be alternating colors and descending rank
+            if (currentCard.isRed() === previousCard.isRed() || 
                 currentCard.rank !== previousCard.rank - 1) {
                 return false;
             }
