@@ -154,8 +154,13 @@ body {
 }
 
 /* Control button hover and focus states */
-.control-btn:hover,
-.control-btn.focused {
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffdd44;
+}
+
+/* Focus state only when using TV remote navigation */
+body.tv-remote-mode .control-btn.focused {
     background: rgba(255, 255, 255, 0.2);
     border-color: #ffdd44; /* Yellow highlight for TV remote navigation */
 }

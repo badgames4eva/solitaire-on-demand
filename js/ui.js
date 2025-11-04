@@ -1014,18 +1014,25 @@ class UIManager {
      * Render foundation piles
      */
     renderFoundation() {
+        // Skip foundation rendering for Spider solitaire
+        if (this.gameState.gameType === 'spider') {
+            return;
+        }
+        
         const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
         
         for (let i = 0; i < 4; i++) {
             const pile = this.gameState.foundation[i];
             const pileElement = document.querySelector(`[data-suit="${suits[i]}"]`);
             
+            if (!pileElement) continue; // Skip if element doesn't exist
+            
             // Clear existing cards
             const existingCards = pileElement.querySelectorAll('.card');
             existingCards.forEach(card => card.remove());
             
             // Render top card if any
-            if (pile.length > 0) {
+            if (pile && pile.length > 0) {
                 const topCard = pile[pile.length - 1];
                 const cardElement = topCard.createElement();
                 
@@ -1142,7 +1149,32 @@ class UIManager {
         if (this.gameState.drawFromStock()) {
             this.renderStock();
             this.renderWaste();
+            
+            // For Spider solitaire, also update the tableau since cards are dealt there
+            if (this.gameState.gameType === 'spider') {
+                this.renderTableau();
+            }
+            
             this.updateGameDisplay();
+        } else {
+            // Provide feedback when stock can't be dealt from
+            if (this.gameState.gameType === 'spider') {
+                // Check specific Spider solitaire conditions
+                if (this.gameState.stock.length < 10) {
+                    this.showMessage('Not enough cards in stock to deal (need 10 cards).');
+                } else {
+                    // Check for empty columns
+                    const emptyColumns = this.gameState.tableau.filter(col => col.length === 0).length;
+                    if (emptyColumns > 0) {
+                        this.showMessage('Cannot deal from stock while there are empty columns. Fill all columns first.');
+                    } else {
+                        this.showMessage('Cannot deal from stock at this time.');
+                    }
+                }
+            } else {
+                // Klondike solitaire - no cards available
+                this.showMessage('No more cards in stock.');
+            }
         }
     }
 
@@ -1594,7 +1626,7 @@ class UIManager {
     /**
      * Show a temporary message
      */
-    showMessage(message, duration = 3000) {
+    showMessage(message, duration = 5000) {
         // Create or update message element
         let messageEl = document.getElementById('game-message');
         if (!messageEl) {
@@ -1602,15 +1634,20 @@ class UIManager {
             messageEl.id = 'game-message';
             messageEl.style.cssText = `
                 position: fixed;
-                top: 50%;
+                top: 20%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
+                background: rgba(255, 0, 0, 0.9);
                 color: white;
-                padding: 1rem 2rem;
-                border-radius: 8px;
-                z-index: 3000;
-                font-size: 1.1rem;
+                padding: 1.5rem 2.5rem;
+                border-radius: 12px;
+                z-index: 5000;
+                font-size: 1.3rem;
+                font-weight: bold;
+                border: 3px solid white;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                max-width: 80%;
+                text-align: center;
             `;
             document.body.appendChild(messageEl);
         }
@@ -1618,7 +1655,12 @@ class UIManager {
         messageEl.textContent = message;
         messageEl.style.display = 'block';
         
-        setTimeout(() => {
+        // Clear any existing timeout
+        if (messageEl.hideTimeout) {
+            clearTimeout(messageEl.hideTimeout);
+        }
+        
+        messageEl.hideTimeout = setTimeout(() => {
             messageEl.style.display = 'none';
         }, duration);
     }
