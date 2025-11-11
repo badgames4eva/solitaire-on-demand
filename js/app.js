@@ -79,8 +79,7 @@ function setupTVRemoteHandlers() {
         switch (key) {
             // Play/Pause button - Draw from stock
             case 'MediaPlayPause':
-            case ' ': // Space bar also triggers play/pause on some Fire TV devices
-                if (event.code === 'Space' && currentScreen?.id === 'game-screen') {
+                if (currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Play/Pause button pressed - Drawing from stock');
                     logFunctionCall('Draw from stock', 'MediaPlayPause button triggered');
@@ -132,6 +131,7 @@ function setupTVRemoteHandlers() {
                 
             // Back button - Enhanced navigation
             case 'GoBack':
+            case 'back':
             case 'Escape': // Fallback for back button
                 event.preventDefault();
                 console.log('Back button pressed');
@@ -150,18 +150,6 @@ function setupTVRemoteHandlers() {
                         undoBtn.click();
                     } else {
                         solitaireGame.uiManager.showScreen('main-menu');
-                    }
-                }
-                break;
-                
-            case 'MediaPlay': // Dedicated play button
-                if (currentScreen?.id === 'game-screen') {
-                    event.preventDefault();
-                    console.log('Play button pressed - Showing hint');
-                    logFunctionCall('Show hint', 'MediaPlay button triggered');
-                    const hintBtn = document.getElementById('hint-btn');
-                    if (hintBtn && !hintBtn.disabled) {
-                        hintBtn.click();
                     }
                 }
                 break;
