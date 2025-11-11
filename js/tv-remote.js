@@ -59,21 +59,10 @@ class TVRemoteHandler {
             
             // Listen for TV remote events
             this.tvEventHandler.addEventListener('keydown', (event) => {
-                // Handle system back button (keyCode 27) directly
-                if (event.keyCode === 27) {
-                    this.handleSystemBack();
-                    return;
-                }
-                
                 this.handleTVEvent(event.eventType, 0); // PRESSED
             });
             
             this.tvEventHandler.addEventListener('keyup', (event) => {
-                // Skip system back button on keyup (handled on keydown)
-                if (event.keyCode === 27) {
-                    return;
-                }
-                
                 this.handleTVEvent(event.eventType, 1); // RELEASED
             });
             
@@ -89,13 +78,6 @@ class TVRemoteHandler {
      */
     initKeyboardHandler() {
         document.addEventListener('keydown', (event) => {
-            // Handle Fire TV system back button (keyCode 27)
-            if (event.keyCode === 27) {
-                event.preventDefault();
-                this.handleSystemBack();
-                return;
-            }
-
             const mappedKey = this.mapKeyboardToTV(event.key);
             if (mappedKey) {
                 event.preventDefault();
@@ -104,11 +86,6 @@ class TVRemoteHandler {
         });
 
         document.addEventListener('keyup', (event) => {
-            // Skip system back button on keyup (handled on keydown)
-            if (event.keyCode === 27) {
-                return;
-            }
-
             const mappedKey = this.mapKeyboardToTV(event.key);
             if (mappedKey) {
                 event.preventDefault();
@@ -136,17 +113,23 @@ class TVRemoteHandler {
             // Additional mappings for game functions
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
             'KeyH': 'playpause',      // H key for Hint (maps to Play/Pause button)
 =======
             'KeyH': 'play',           // H key for Hint (maps to Play button)
 >>>>>>> parent of 472bfe1 (refactor: standardize TV remote event names and add exit functionality)
             'KeyU': 'skip_backward',  // U key for Undo (maps to Skip Backward button)  
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
+<<<<<<< HEAD
 =======
             'KeyH': 'play',    // H key for Hint (maps to Play button)
             'KeyU': 'back',    // U key for Undo (maps to Back button)  
             'KeyM': 'menu'     // M key for Menu (maps to Menu button)
 >>>>>>> main
+=======
+>>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
         };
         return keyMap[key];
     }
@@ -214,12 +197,11 @@ class TVRemoteHandler {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
             case 'skip_backward':
                 this.handleSkipBackward();
-=======
-            case 'rewind':
-                this.handleRewind();
->>>>>>> main
                 break;
 =======
 >>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
@@ -499,110 +481,6 @@ class TVRemoteHandler {
     }
 
     /**
-     * Handle Fire TV system back button (keyCode 27)
-     * This is called when allowSystemKeyEvents is true and the system back button is pressed
-     */
-    handleSystemBack() {
-        console.log('Fire TV system back button pressed');
-        
-        // Get current screen to determine appropriate action
-        const currentScreen = document.querySelector('.screen.active');
-        const currentScreenId = currentScreen ? currentScreen.id : 'unknown';
-        
-        switch (currentScreenId) {
-            case 'main-menu':
-                // On main menu, exit the app
-                this.exitApp();
-                break;
-            case 'game-screen':
-                // In game, go back to main menu
-                this.navigateToMainMenu();
-                break;
-            case 'stats-screen':
-            case 'settings-screen':
-                // In other screens, go back to main menu
-                this.navigateToMainMenu();
-                break;
-            default:
-                // Unknown screen, try to go to main menu or exit
-                this.navigateToMainMenu();
-                break;
-        }
-    }
-
-    /**
-     * Navigate to main menu
-     */
-    navigateToMainMenu() {
-        // Emit custom back event for app to handle
-        const backEvent = new CustomEvent('tvback', {
-            detail: { 
-                source: 'system',
-                action: 'navigate-to-menu'
-            }
-        });
-        document.dispatchEvent(backEvent);
-    }
-
-    /**
-     * Exit the Fire TV app
-     */
-    exitApp() {
-        console.log('Exiting Fire TV app...');
-        
-        // Show exit confirmation if desired
-        if (this.shouldShowExitConfirmation()) {
-            this.showExitConfirmation();
-        } else {
-            this.performExit();
-        }
-    }
-
-    /**
-     * Check if exit confirmation should be shown
-     */
-    shouldShowExitConfirmation() {
-        // Show confirmation if there's an active game
-        const gameScreen = document.getElementById('game-screen');
-        return gameScreen && gameScreen.classList.contains('active');
-    }
-
-    /**
-     * Show exit confirmation dialog
-     */
-    showExitConfirmation() {
-        const confirmed = confirm('Are you sure you want to exit the game?');
-        if (confirmed) {
-            this.performExit();
-        }
-    }
-
-    /**
-     * Perform the actual app exit
-     */
-    performExit() {
-        try {
-            // Call window.close() to trigger onCloseWindow in the React Native wrapper
-            window.close();
-        } catch (error) {
-            console.warn('Failed to close window:', error);
-            
-            // Fallback: try to navigate away or show exit message
-            try {
-                // Alternative method for Fire TV
-                if (typeof window.TVEventHandler !== 'undefined') {
-                    // Try to send exit event to Fire TV
-                    window.history.back();
-                }
-            } catch (fallbackError) {
-                console.warn('Fallback exit method failed:', fallbackError);
-                // Last resort: show message to user
-                alert('Please use the Fire TV home button to exit the app.');
-            }
-        }
-    }
-
-    /**
      * Handle menu button press
      */
     handleMenu() {
@@ -628,6 +506,9 @@ class TVRemoteHandler {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
      * Handle skip backward button press (used for Undo function)
      */
     handleSkipBackward() {
@@ -636,16 +517,6 @@ class TVRemoteHandler {
             detail: { source: 'remote' }
         });
         document.dispatchEvent(skipBackwardEvent);
-=======
-     * Handle rewind button press (used for Undo function)
-     */
-    handleRewind() {
-        // Emit custom rewind event for undo functionality
-        const rewindEvent = new CustomEvent('tvrewind', {
-            detail: { source: 'remote' }
-        });
-        document.dispatchEvent(rewindEvent);
->>>>>>> main
     }
 
     /**

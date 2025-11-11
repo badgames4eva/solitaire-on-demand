@@ -1,20 +1,15 @@
 # Solitaire On Demand
 
-A progressive web app for classic solitaire games with TV remote support and multiple difficulty levels. Play both Klondike and Spider solitaire variants.
+A progressive web app for Klondike Solitaire with TV remote support and multiple difficulty levels.
 
 ## Features
 
 ### Core Gameplay
-- **Two Solitaire Variants**:
-  - **Klondike Solitaire**: Classic 7-column layout with foundation building
-  - **Spider Solitaire**: 10-column layout with sequence completion gameplay
+- **Classic Klondike Solitaire** with standard rules
 - **Multiple Difficulty Levels**:
-  - **Klondike Easy**: Winnable deals with unlimited undos and hints
-  - **Klondike Medium**: Classic gameplay with limited undos and hints
-  - **Klondike Hard**: Draw-3 cards mode with minimal assistance
-  - **Spider 1-Suit**: Easier Spider with only Spades (52 cards)
-  - **Spider 2-Suit**: Medium Spider with Spades and Hearts (104 cards)
-  - **Spider 4-Suit**: Hard Spider with all suits (104 cards)
+  - **Easy**: Winnable deals with unlimited undos and hints
+  - **Medium**: Classic gameplay with limited undos and hints
+  - **Hard**: Draw-3 cards mode with minimal assistance
 - **Smart Hint System** with move suggestions and game analysis
 - **Undo Functionality** with difficulty-based limits
 - **Auto-complete** when all cards can be moved to foundations
@@ -49,19 +44,17 @@ A progressive web app for classic solitaire games with TV remote support and mul
 - **Error Handling** with graceful degradation
 
 ### Key Classes
-- `Card`: Individual playing card with game logic for both variants
-- `Deck`: Multi-deck system supporting 52-card (Klondike) and 104-card (Spider) games
-- `GameState`: Complete game state management with variant-specific logic
+- `Card`: Individual playing card with game logic
+- `Deck`: 52-card deck with shuffling and dealing
+- `GameState`: Complete game state management
 - `DifficultyManager`: Handles difficulty settings and features
 - `HintSystem`: Provides move suggestions and analysis
 - `TVRemoteHandler`: TV remote navigation and input
-- `UIManager`: User interface and rendering with dynamic layout switching
+- `UIManager`: User interface and rendering
 - `SolitaireGame`: Main game controller
 
-### Game Variants and Difficulty
-
-#### Klondike Solitaire
-Traditional solitaire with 7 tableau columns and 4 foundation piles.
+### Difficulty System
+Each difficulty level has different features:
 
 | Feature | Easy | Medium | Hard |
 |---------|------|--------|------|
@@ -71,17 +64,6 @@ Traditional solitaire with 7 tableau columns and 4 foundation piles.
 | Auto-complete | ✓ | ✓ | ✗ |
 | Undo Limit | Unlimited | 10 | 3 |
 | Score Multiplier | 0.8x | 1.0x | 1.5x |
-
-#### Spider Solitaire
-Build complete sequences from King to Ace in the same suit within 10 tableau columns.
-
-| Feature | 1-Suit | 2-Suit | 4-Suit |
-|---------|--------|--------|--------|
-| Suits Used | Spades only | Spades & Hearts | All 4 suits |
-| Total Cards | 52 | 104 | 104 |
-| Difficulty | Easy | Medium | Hard |
-| Objective | Build 4 sequences | Build 8 sequences | Build 8 sequences |
-| Strategy | Focus on rank order | Manage 2 suit colors | Complex suit management |
 
 ### TV Remote Controls
 - **D-pad**: Navigate between game areas
@@ -135,31 +117,14 @@ solitaire-on-demand/
 - **Mobile Browsers**: Touch and keyboard input
 - **Progressive Enhancement**: Graceful fallbacks
 
-## Game Rules
-
-### Klondike Solitaire
-- **Objective**: Move all cards to 4 foundation piles (Ace to King by suit)
-- **Tableau**: 7 columns with cards dealt face-down and face-up
-- **Stock**: Remaining cards dealt 1 or 3 at a time to waste pile
-- **Building**: Tableau builds down by alternating colors, foundations build up by suit
-- **Moving**: Can move single cards or sequences between tableau columns
-
-### Spider Solitaire
-- **Objective**: Build complete sequences from King to Ace in the same suit
-- **Tableau**: 10 columns with 54 cards dealt (6 face-down + 4 face-up in first 4 columns, 5 face-down + 1 face-up in remaining 6)
-- **Stock**: 50 remaining cards dealt 10 at a time (one to each column)
-- **Building**: Tableau builds down by rank (any suit), but sequences can only be moved if same suit
-- **Completion**: Complete K-A sequences are automatically removed when formed
-
 ## Game Statistics Tracked
 
-- Games played and won (by variant and difficulty)
+- Games played and won
 - Win percentage
 - Average game time
 - Best completion time
 - Number of moves per game
-- Stock pile cycles (Klondike)
-- Sequences completed (Spider)
+- Stock pile cycles
 - Empty columns created
 
 ## Keyboard Shortcuts
@@ -190,14 +155,12 @@ The TV remote system uses the Fire TV `TVEventHandler` API when available, with 
 
 ## Future Enhancements
 
-- **Additional Variants**: FreeCell, Pyramid, TriPeaks solitaire
 - **Multiplayer Support**: Online competitive play
 - **Achievement System**: Unlock rewards for milestones
 - **Custom Themes**: Different visual styles
 - **Sound Effects**: Audio feedback for actions
 - **Advanced Statistics**: Detailed analytics and graphs
 - **Tournament Mode**: Timed challenges and leaderboards
-- **Spider Enhancements**: Hint system and auto-complete for Spider variant
 
 ## License
 

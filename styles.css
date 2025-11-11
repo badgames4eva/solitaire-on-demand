@@ -140,13 +140,8 @@ body {
 }
 
 /* Control button hover and focus states */
-.control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ffdd44;
-}
-
-/* Focus state only when using TV remote navigation */
-body.tv-remote-mode .control-btn.focused {
+.control-btn:hover,
+.control-btn.focused {
     background: rgba(255, 255, 255, 0.2);
     border-color: #ffdd44; /* Yellow highlight for TV remote navigation */
 }
@@ -170,7 +165,11 @@ body.tv-remote-mode #hint-btn::after {
 }
 
 body.tv-remote-mode #undo-btn::after {
+<<<<<<< HEAD
     content: "⏪"; /* Rewind icon for undo */
+=======
+    content: "⏪"; /* Rewind/skip backward icon for undo */
+>>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
 }
 
 body.tv-remote-mode #menu-btn::after {

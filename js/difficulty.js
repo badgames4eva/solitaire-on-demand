@@ -163,17 +163,10 @@ class HintSystem {
 
     /**
      * Find available moves in the current game state
-     * Handles both Klondike and Spider solitaire game types
      */
     findAvailableMoves(gameState) {
         const moves = [];
 
-        // Handle Spider solitaire moves
-        if (gameState.gameType === 'spider') {
-            return this.findSpiderMoves(gameState);
-        }
-
-        // Handle Klondike solitaire moves (original logic)
         // Check moves from tableau to foundation
         for (let col = 0; col < gameState.tableau.length; col++) {
             const column = gameState.tableau[col];
@@ -195,8 +188,8 @@ class HintSystem {
             }
         }
 
-        // Check moves from waste to foundation (Klondike only)
-        if (gameState.waste && gameState.waste.length > 0) {
+        // Check moves from waste to foundation
+        if (gameState.waste.length > 0) {
             const topCard = gameState.waste[gameState.waste.length - 1];
             for (let foundIndex = 0; foundIndex < 4; foundIndex++) {
                 if (topCard.canPlaceOnFoundation(gameState.foundation[foundIndex])) {
@@ -211,8 +204,8 @@ class HintSystem {
             }
         }
 
-        // Check moves from waste to tableau (Klondike only)
-        if (gameState.waste && gameState.waste.length > 0) {
+        // Check moves from waste to tableau
+        if (gameState.waste.length > 0) {
             const topCard = gameState.waste[gameState.waste.length - 1];
             for (let col = 0; col < gameState.tableau.length; col++) {
                 const column = gameState.tableau[col];
@@ -285,96 +278,12 @@ class HintSystem {
             }
         }
 
-        // Check if stock can be drawn (Klondike only)
-        if (gameState.stock && gameState.stock.length > 0 || (gameState.waste && gameState.waste.length > 0)) {
+        // Check if stock can be drawn
+        if (gameState.stock.length > 0 || gameState.waste.length > 0) {
             moves.push({
                 type: 'draw-stock',
                 from: { area: 'stock', index: 0 },
                 to: { area: 'waste', index: 0 },
-                priority: 1 // Low priority, only suggest if no other moves
-            });
-        }
-
-        // Sort moves by priority (highest first)
-        moves.sort((a, b) => b.priority - a.priority);
-
-        return moves;
-    }
-
-    /**
-     * Find available moves for Spider solitaire
-     */
-    findSpiderMoves(gameState) {
-        const moves = [];
-
-        // Check moves between tableau columns in Spider solitaire
-        for (let fromCol = 0; fromCol < gameState.tableau.length; fromCol++) {
-            const fromColumn = gameState.tableau[fromCol];
-            
-            // Find sequences of face-up cards that can be moved
-            for (let startIndex = 0; startIndex < fromColumn.length; startIndex++) {
-                if (!fromColumn[startIndex].faceUp) continue;
-                
-                // In Spider, we can move sequences of same suit in descending order
-                let sequenceLength = 1;
-                for (let i = startIndex + 1; i < fromColumn.length; i++) {
-                    const currentCard = fromColumn[i - 1];
-                    const nextCard = fromColumn[i];
-                    
-                    // Check if cards form a valid Spider sequence (same suit, descending)
-                    if (nextCard.suit === currentCard.suit && nextCard.rank === currentCard.rank - 1) {
-                        sequenceLength++;
-                    } else {
-                        break;
-                    }
-                }
-
-                // Try to move this sequence to other columns
-                const movingCard = fromColumn[startIndex];
-                for (let toCol = 0; toCol < gameState.tableau.length; toCol++) {
-                    if (toCol === fromCol) continue;
-                    
-                    const toColumn = gameState.tableau[toCol];
-                    const targetCard = toColumn.length > 0 ? toColumn[toColumn.length - 1] : null;
-                    
-                    // In Spider, any card can be placed on any other card (but only same suit sequences move together)
-                    if (targetCard === null || movingCard.rank === targetCard.rank - 1) {
-                        let priority = 3; // Base priority for tableau moves
-                        
-                        // Higher priority if it reveals a face-down card
-                        if (startIndex > 0 && !fromColumn[startIndex - 1].faceUp) {
-                            priority += 3;
-                        }
-                        
-                        // Higher priority if moving to empty column
-                        if (toColumn.length === 0) {
-                            priority += 2;
-                        }
-
-                        // Higher priority if it creates a longer sequence of same suit
-                        if (targetCard && movingCard.suit === targetCard.suit) {
-                            priority += 1;
-                        }
-
-                        moves.push({
-                            type: 'tableau-to-tableau',
-                            from: { area: 'tableau', index: fromCol },
-                            to: { area: 'tableau', index: toCol },
-                            card: movingCard,
-                            cardCount: sequenceLength,
-                            priority: priority
-                        });
-                    }
-                }
-            }
-        }
-
-        // Check if stock can be dealt (Spider solitaire)
-        if (gameState.stock && gameState.stock.length > 0) {
-            moves.push({
-                type: 'deal-stock',
-                from: { area: 'stock', index: 0 },
-                to: { area: 'tableau', index: -1 }, // Deal to all columns
                 priority: 1 // Low priority, only suggest if no other moves
             });
         }
@@ -413,11 +322,10 @@ class HintSystem {
     isGameStuck(gameState) {
         const moves = this.findAvailableMoves(gameState);
         
-        // Filter out stock drawing/dealing moves
-        const stockMoveTypes = gameState.gameType === 'spider' ? ['deal-stock'] : ['draw-stock'];
-        const meaningfulMoves = moves.filter(move => !stockMoveTypes.includes(move.type));
+        // Filter out stock drawing moves
+        const meaningfulMoves = moves.filter(move => move.type !== 'draw-stock');
         
-        return meaningfulMoves.length === 0 && (!gameState.stock || gameState.stock.length === 0);
+        return meaningfulMoves.length === 0 && gameState.stock.length === 0;
     }
 
     /**
@@ -433,12 +341,6 @@ class HintSystem {
             suggestions: []
         };
 
-        // Handle Spider solitaire analysis
-        if (gameState.gameType === 'spider') {
-            return this.analyzeSpiderGameState(gameState, analysis);
-        }
-
-        // Handle Klondike solitaire analysis (original logic)
         // Count buried aces
         gameState.tableau.forEach(column => {
             for (let i = 0; i < column.length - 1; i++) {
@@ -461,13 +363,11 @@ class HintSystem {
             }
         });
 
-        // Calculate foundation progress (Klondike only)
-        if (gameState.foundation) {
-            const totalFoundationCards = gameState.foundation.reduce((sum, pile) => sum + pile.length, 0);
-            analysis.foundationProgress = (totalFoundationCards / 52) * 100;
-        }
+        // Calculate foundation progress
+        const totalFoundationCards = gameState.foundation.reduce((sum, pile) => sum + pile.length, 0);
+        analysis.foundationProgress = (totalFoundationCards / 52) * 100;
 
-        // Generate suggestions for Klondike
+        // Generate suggestions
         if (analysis.emptyColumns > 0 && analysis.exposedKings === 0) {
             analysis.suggestions.push("Try to expose a King to fill empty columns");
         }
@@ -478,56 +378,6 @@ class HintSystem {
 
         if (analysis.foundationProgress < 20 && analysis.availableMoves > 5) {
             analysis.suggestions.push("Build foundations when possible for easier endgame");
-        }
-
-        return analysis;
-    }
-
-    /**
-     * Analyze Spider solitaire game state
-     */
-    analyzeSpiderGameState(gameState, analysis) {
-        // Count empty columns
-        analysis.emptyColumns = gameState.tableau.filter(col => col.length === 0).length;
-
-        // Count completed sequences
-        const completedSequences = gameState.completedSequences ? gameState.completedSequences.length : 0;
-        analysis.foundationProgress = (completedSequences / 8) * 100; // 8 complete sequences needed
-
-        // Count potential sequences (K-A of same suit)
-        let potentialSequences = 0;
-        gameState.tableau.forEach(column => {
-            for (let i = 0; i < column.length; i++) {
-                if (column[i].faceUp && column[i].rank === 13) { // King
-                    // Check if we can build a sequence from this King
-                    let sequenceLength = 1;
-                    for (let j = i + 1; j < column.length; j++) {
-                        const prevCard = column[j - 1];
-                        const currentCard = column[j];
-                        if (currentCard.suit === prevCard.suit && currentCard.rank === prevCard.rank - 1) {
-                            sequenceLength++;
-                        } else {
-                            break;
-                        }
-                    }
-                    if (sequenceLength >= 5) { // Partial sequence worth noting
-                        potentialSequences++;
-                    }
-                }
-            }
-        });
-
-        // Generate suggestions for Spider
-        if (analysis.emptyColumns > 0) {
-            analysis.suggestions.push("Use empty columns strategically to build sequences");
-        }
-
-        if (potentialSequences > 0) {
-            analysis.suggestions.push("Focus on completing sequences from King to Ace");
-        }
-
-        if (analysis.availableMoves < 3 && gameState.stock && gameState.stock.length > 0) {
-            analysis.suggestions.push("Consider dealing from stock to create new opportunities");
         }
 
         return analysis;
