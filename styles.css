@@ -170,15 +170,7 @@ body.tv-remote-mode #hint-btn::after {
 }
 
 body.tv-remote-mode #undo-btn::after {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    content: "⏪"; /* Rewind/skip backward icon for undo */
-=======
     content: "⏪"; /* Rewind icon for undo */
->>>>>>> main
-=======
-    content: "↩️"; /* Return/undo arrow icon */
->>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
 }
 
 body.tv-remote-mode #menu-btn::after {

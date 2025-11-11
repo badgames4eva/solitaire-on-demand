@@ -213,6 +213,7 @@ class TVRemoteHandler {
                 break;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             case 'skip_backward':
                 this.handleSkipBackward();
 =======
@@ -220,6 +221,8 @@ class TVRemoteHandler {
                 this.handleRewind();
 >>>>>>> main
                 break;
+=======
+>>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
 =======
 >>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
         }
@@ -624,6 +627,7 @@ class TVRemoteHandler {
     /**
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
      * Handle skip backward button press (used for Undo function)
      */
     handleSkipBackward() {
@@ -645,6 +649,8 @@ class TVRemoteHandler {
     }
 
     /**
+=======
+>>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
 =======
 >>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
      * Handle long select press
