@@ -33,6 +33,9 @@ function initializeApp() {
         // Setup Fire TV remote button handlers
         setupTVRemoteHandlers();
         
+        // Setup debug panel for Fire TV remote testing
+        setupDebugPanel();
+        
         // Set up custom card back image
         setupCustomCardBack();
         
@@ -53,22 +56,34 @@ function initializeApp() {
  */
 function setupTVRemoteHandlers() {
     document.addEventListener('keydown', (event) => {
+        const key = event.key;
+        const code = event.code;
+        
+        // Log all key events to debug panel
+        logKeyEvent(event);
+        
+        // Handle debug panel toggle (F12 key)
+        if (key === 'F12') {
+            event.preventDefault();
+            toggleDebugPanel();
+            return;
+        }
+        
         // Only handle Fire TV remote keys when solitaire game is active
         if (!solitaireGame) return;
         
         const currentScreen = document.querySelector('.screen.active');
-        const key = event.key;
-        const code = event.code;
         
         console.log('Fire TV Key pressed:', key, 'Code:', code);
         
         switch (key) {
             // Play/Pause button - Draw from stock
             case 'MediaPlayPause':
-            case 'playpause': 
+            case ' ': // Space bar also triggers play/pause on some Fire TV devices
                 if (event.code === 'Space' && currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Play/Pause button pressed - Drawing from stock');
+                    logFunctionCall('Draw from stock', 'MediaPlayPause button triggered');
                     const stockPile = document.querySelector('.stock-pile');
                     if (stockPile) {
                         stockPile.click();
@@ -81,6 +96,7 @@ function setupTVRemoteHandlers() {
                 if (currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Fast Forward button pressed - Showing hint');
+                    logFunctionCall('Show hint', 'MediaFastForward button triggered');
                     const hintBtn = document.getElementById('hint-btn');
                     if (hintBtn && !hintBtn.disabled) {
                         hintBtn.click();
@@ -93,6 +109,7 @@ function setupTVRemoteHandlers() {
                 if (currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Rewind button pressed - Undo move');
+                    logFunctionCall('Undo move', 'MediaRewind button triggered');
                     const undoBtn = document.getElementById('undo-btn');
                     if (undoBtn && !undoBtn.disabled) {
                         undoBtn.click();
@@ -105,6 +122,7 @@ function setupTVRemoteHandlers() {
             case 'F1': // Some Fire TV devices map menu to F1
                 event.preventDefault();
                 console.log('Menu button pressed');
+                logFunctionCall('Menu action', 'ContextMenu/F1 button triggered');
                 if (currentScreen?.id === 'game-screen') {
                     solitaireGame.uiManager.showScreen('main-menu');
                 } else {
@@ -114,10 +132,10 @@ function setupTVRemoteHandlers() {
                 
             // Back button - Enhanced navigation
             case 'GoBack':
-            case 'back':
             case 'Escape': // Fallback for back button
                 event.preventDefault();
                 console.log('Back button pressed');
+                logFunctionCall('Back navigation', 'GoBack/Escape button triggered');
                 solitaireGame.uiManager.handleBackButton();
                 break;
                 
@@ -126,6 +144,7 @@ function setupTVRemoteHandlers() {
                 if (currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Skip Backward button pressed - Undo move');
+                    logFunctionCall('Undo move', 'MediaTrackPrevious button triggered');
                     const undoBtn = document.getElementById('undo-btn');
                     if (undoBtn && !undoBtn.disabled) {
                         undoBtn.click();
@@ -139,6 +158,7 @@ function setupTVRemoteHandlers() {
                 if (currentScreen?.id === 'game-screen') {
                     event.preventDefault();
                     console.log('Play button pressed - Showing hint');
+                    logFunctionCall('Show hint', 'MediaPlay button triggered');
                     const hintBtn = document.getElementById('hint-btn');
                     if (hintBtn && !hintBtn.disabled) {
                         hintBtn.click();
@@ -152,6 +172,7 @@ function setupTVRemoteHandlers() {
             const column = parseInt(key) - 1;
             if (column >= 0 && column < 7) {
                 event.preventDefault();
+                logFunctionCall('Column selection', `Select column ${column + 1}`);
                 solitaireGame.uiManager.selectTableauColumn(column);
             }
         }
@@ -161,12 +182,152 @@ function setupTVRemoteHandlers() {
 }
 
 /**
+ * Setup debug panel for Fire TV remote testing
+ */
+function setupDebugPanel() {
+    // Setup debug panel toggle and clear buttons
+    const debugToggle = document.getElementById('debug-toggle');
+    const debugClear = document.getElementById('debug-clear');
+    
+    if (debugToggle) {
+        debugToggle.addEventListener('click', toggleDebugPanel);
+    }
+    
+    if (debugClear) {
+        debugClear.addEventListener('click', clearDebugLog);
+    }
+    
+    // Show debug panel by default for testing
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel) {
+        debugPanel.classList.add('active');
+        logInfo('Debug panel initialized. Press F12 to toggle.');
+    }
+}
+
+/**
+ * Toggle debug panel visibility
+ */
+function toggleDebugPanel() {
+    const debugPanel = document.getElementById('debug-panel');
+    const debugToggle = document.getElementById('debug-toggle');
+    
+    if (debugPanel) {
+        if (debugPanel.classList.contains('active')) {
+            debugPanel.classList.remove('active');
+            if (debugToggle) debugToggle.textContent = 'Show';
+            logInfo('Debug panel hidden');
+        } else {
+            debugPanel.classList.add('active');
+            if (debugToggle) debugToggle.textContent = 'Hide';
+            logInfo('Debug panel shown');
+        }
+    }
+}
+
+/**
+ * Clear debug log
+ */
+function clearDebugLog() {
+    const debugLog = document.getElementById('debug-log');
+    if (debugLog) {
+        debugLog.innerHTML = '';
+        logInfo('Debug log cleared');
+    }
+}
+
+/**
+ * Log key event to debug panel
+ */
+function logKeyEvent(event) {
+    const debugLog = document.getElementById('debug-log');
+    if (!debugLog) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'debug-entry key-event';
+    
+    entry.innerHTML = `
+        <span class="debug-timestamp">[${timestamp}]</span>
+        KEY EVENT: "${event.key}" (${event.code})
+        <div class="debug-key-details">
+            ctrlKey: ${event.ctrlKey}, altKey: ${event.altKey}, shiftKey: ${event.shiftKey}, metaKey: ${event.metaKey}
+        </div>
+    `;
+    
+    debugLog.appendChild(entry);
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
+
+/**
+ * Log function call to debug panel
+ */
+function logFunctionCall(functionName, details) {
+    const debugLog = document.getElementById('debug-log');
+    if (!debugLog) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'debug-entry function-call';
+    
+    entry.innerHTML = `
+        <span class="debug-timestamp">[${timestamp}]</span>
+        FUNCTION: ${functionName}
+        <div class="debug-key-details">${details}</div>
+    `;
+    
+    debugLog.appendChild(entry);
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
+
+/**
+ * Log info message to debug panel
+ */
+function logInfo(message) {
+    const debugLog = document.getElementById('debug-log');
+    if (!debugLog) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'debug-entry info';
+    
+    entry.innerHTML = `
+        <span class="debug-timestamp">[${timestamp}]</span>
+        INFO: ${message}
+    `;
+    
+    debugLog.appendChild(entry);
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
+
+/**
+ * Log error message to debug panel
+ */
+function logError(message) {
+    const debugLog = document.getElementById('debug-log');
+    if (!debugLog) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'debug-entry error';
+    
+    entry.innerHTML = `
+        <span class="debug-timestamp">[${timestamp}]</span>
+        ERROR: ${message}
+    `;
+    
+    debugLog.appendChild(entry);
+    debugLog.scrollTop = debugLog.scrollHeight;
+}
+
+/**
  * Setup global error handling
  */
 function setupErrorHandling() {
     // Handle uncaught JavaScript errors
     window.addEventListener('error', (event) => {
         console.error('Uncaught error:', event.error);
+        logError(`Uncaught error: ${event.error?.message || 'Unknown error'}`);
         
         if (solitaireGame) {
             solitaireGame.showErrorMessage('An unexpected error occurred. The game will continue, but you may want to refresh the page.');
@@ -176,6 +337,7 @@ function setupErrorHandling() {
     // Handle unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
         console.error('Unhandled promise rejection:', event.reason);
+        logError(`Unhandled promise rejection: ${event.reason}`);
         
         if (solitaireGame) {
             solitaireGame.showErrorMessage('A background error occurred. The game should continue normally.');
@@ -277,104 +439,6 @@ function dismissUpdate() {
 }
 
 /**
- * Check for saved game and offer to restore
- */
-function checkForSavedGame() {
-    setTimeout(() => {
-        if (solitaireGame && solitaireGame.loadGameState()) {
-            const restoreBanner = document.createElement('div');
-            restoreBanner.id = 'restore-banner';
-            restoreBanner.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 8px;
-                z-index: 5000;
-                font-size: 1rem;
-                text-align: center;
-            `;
-            
-            restoreBanner.innerHTML = `
-                <div style="margin-bottom: 1rem;">Continue your previous game?</div>
-                <button onclick="restoreGame()" style="margin-right: 1rem; padding: 0.5rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Continue
-                </button>
-                <button onclick="dismissRestore()" style="padding: 0.5rem 1rem; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer;">
-                    New Game
-                </button>
-            `;
-            
-            document.body.appendChild(restoreBanner);
-            
-            // Auto-dismiss after 10 seconds
-            setTimeout(() => {
-                dismissRestore();
-            }, 10000);
-        }
-    }, 1000);
-}
-
-/**
- * Restore saved game
- */
-function restoreGame() {
-    if (solitaireGame) {
-        // The game state was already loaded in checkForSavedGame()
-        // Now we need to properly restore the UI and render the board
-        try {
-            // Switch to game screen
-            solitaireGame.uiManager.showScreen('game-screen');
-            
-            // Update difficulty display
-            solitaireGame.uiManager.updateDifficultyDisplay();
-            
-            // Render the game board with the loaded state
-            solitaireGame.uiManager.renderGameBoard();
-            
-            // Update UI elements (timer, score, moves)
-            solitaireGame.uiManager.updateGameInfo();
-            
-            // Update button states
-            solitaireGame.uiManager.updateButtonStates();
-            
-            // Resume the game timer if the game was in progress
-            if (solitaireGame.gameState.startTime && !solitaireGame.gameState.gameWon) {
-                solitaireGame.uiManager.startGameTimer();
-            }
-            
-            // Refresh TV remote focus
-            solitaireGame.tvRemote.refresh();
-            
-            console.log('Game restored successfully');
-        } catch (error) {
-            console.error('Failed to restore game:', error);
-            // If restore fails, start a new game instead
-            solitaireGame.uiManager.startNewGame('medium');
-        }
-    }
-    
-    dismissRestore();
-}
-
-/**
- * Dismiss restore notification and clear saved game
- */
-function dismissRestore() {
-    const banner = document.getElementById('restore-banner');
-    if (banner) {
-        banner.remove();
-    }
-    
-    if (solitaireGame) {
-        solitaireGame.clearSavedGame();
-    }
-}
-
-/**
  * Show fatal error message
  */
 function showFatalError(message) {
@@ -407,134 +471,6 @@ function showFatalError(message) {
     
     document.body.appendChild(errorDiv);
 }
-
-/**
- * Handle app installation prompt
- */
-let deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (event) => {
-    // Prevent the mini-infobar from appearing on mobile
-    event.preventDefault();
-    
-    // Save the event so it can be triggered later
-    deferredPrompt = event;
-    
-    // Show install button or banner
-    showInstallPrompt();
-});
-
-/**
- * Show install prompt
- */
-function showInstallPrompt() {
-    const installBanner = document.createElement('div');
-    installBanner.id = 'install-banner';
-    installBanner.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #4CAF50;
-        color: white;
-        padding: 1rem;
-        border-radius: 8px;
-        z-index: 5000;
-        font-size: 0.9rem;
-        max-width: 300px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    `;
-    
-    installBanner.innerHTML = `
-        <div style="margin-bottom: 1rem;">Install Solitaire On Demand for quick access!</div>
-        <button onclick="installApp()" style="margin-right: 1rem; padding: 0.5rem 1rem; background: white; color: #4CAF50; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-            Install
-        </button>
-        <button onclick="dismissInstall()" style="padding: 0.5rem 1rem; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-            Not Now
-        </button>
-    `;
-    
-    document.body.appendChild(installBanner);
-    
-    // Auto-dismiss after 15 seconds
-    setTimeout(() => {
-        dismissInstall();
-    }, 15000);
-}
-
-/**
- * Install the app
- */
-function installApp() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            } else {
-                console.log('User dismissed the install prompt');
-            }
-            
-            deferredPrompt = null;
-        });
-    }
-    
-    dismissInstall();
-}
-
-/**
- * Dismiss install prompt
- */
-function dismissInstall() {
-    const banner = document.getElementById('install-banner');
-    if (banner) {
-        banner.remove();
-    }
-}
-
-/**
- * Handle app lifecycle events
- */
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        console.log('App hidden - pausing game');
-    } else {
-        console.log('App visible - resuming game');
-    }
-});
-
-/**
- * Debug functions (available in console)
- */
-window.debugSolitaire = {
-    // Game state functions
-    getGameState: () => solitaireGame?.gameState,
-    getDifficulty: () => solitaireGame?.difficultyManager?.currentDifficulty,
-    getDebugInfo: () => solitaireGame?.getDebugInfo(),
-    exportGame: () => solitaireGame?.exportGameState(),
-    importGame: (data) => solitaireGame?.importGameState(data),
-    resetStats: () => solitaireGame?.resetStatistics(),
-    getAnalytics: () => solitaireGame?.getGameAnalytics(),
-    isWinnable: () => solitaireGame?.isGameWinnable(),
-    getAvailableMoves: () => solitaireGame?.getAvailableMovesCount(),
-    
-    // Testing functions
-    testDistance: () => solitaireGame?.tvRemote?.testCalculateDistance(),
-    testKeyboard: () => solitaireGame?.uiManager?.testKeyboardNavigation(),
-    testNavigation: (direction) => solitaireGame?.uiManager?.testNavigationDirection(direction),
-    
-    // Quick navigation tests
-    testUp: () => solitaireGame?.uiManager?.testNavigationDirection('up'),
-    testDown: () => solitaireGame?.uiManager?.testNavigationDirection('down'),
-    testLeft: () => solitaireGame?.uiManager?.testNavigationDirection('left'),
-    testRight: () => solitaireGame?.uiManager?.testNavigationDirection('right'),
-    
-    // Helper functions
-    startGame: (difficulty = 'medium') => solitaireGame?.uiManager?.startNewGame(difficulty),
-    getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),
-    getNavState: () => solitaireGame?.uiManager?.keyboardNavigation
-};
 
 /**
  * Load version from manifest.toml and display it
@@ -586,6 +522,43 @@ function setupCustomCardBack() {
 }
 
 /**
+ * Debug functions (available in console)
+ */
+window.debugSolitaire = {
+    // Game state functions
+    getGameState: () => solitaireGame?.gameState,
+    getDifficulty: () => solitaireGame?.difficultyManager?.currentDifficulty,
+    getDebugInfo: () => solitaireGame?.getDebugInfo(),
+    exportGame: () => solitaireGame?.exportGameState(),
+    importGame: (data) => solitaireGame?.importGameState(data),
+    resetStats: () => solitaireGame?.resetStatistics(),
+    getAnalytics: () => solitaireGame?.getGameAnalytics(),
+    isWinnable: () => solitaireGame?.isGameWinnable(),
+    getAvailableMoves: () => solitaireGame?.getAvailableMovesCount(),
+    
+    // Testing functions
+    testDistance: () => solitaireGame?.tvRemote?.testCalculateDistance(),
+    testKeyboard: () => solitaireGame?.uiManager?.testKeyboardNavigation(),
+    testNavigation: (direction) => solitaireGame?.uiManager?.testNavigationDirection(direction),
+    
+    // Quick navigation tests
+    testUp: () => solitaireGame?.uiManager?.testNavigationDirection('up'),
+    testDown: () => solitaireGame?.uiManager?.testNavigationDirection('down'),
+    testLeft: () => solitaireGame?.uiManager?.testNavigationDirection('left'),
+    testRight: () => solitaireGame?.uiManager?.testNavigationDirection('right'),
+    
+    // Helper functions
+    startGame: (difficulty = 'medium') => solitaireGame?.uiManager?.startNewGame(difficulty),
+    getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),
+    getNavState: () => solitaireGame?.uiManager?.keyboardNavigation,
+    
+    // Debug panel functions
+    toggleDebug: () => toggleDebugPanel(),
+    clearDebug: () => clearDebugLog(),
+    logTest: (message) => logInfo(`Test: ${message}`)
+};
+
+/**
  * Performance monitoring
  */
 if ('performance' in window) {
@@ -612,7 +585,5 @@ if (document.readyState === 'loading') {
 // Make functions globally available
 window.reloadApp = reloadApp;
 window.dismissUpdate = dismissUpdate;
-window.restoreGame = restoreGame;
-window.dismissRestore = dismissRestore;
-window.installApp = installApp;
-window.dismissInstall = dismissInstall;
+window.toggleDebugPanel = toggleDebugPanel;
+window.clearDebugLog = clearDebugLog;

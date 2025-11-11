@@ -1006,3 +1006,128 @@ body.tv-remote-mode .control-btn.focused::before {
 .card.auto-completing {
     animation: autoComplete 0.8s ease-in forwards;
 }
+
+/* ========================================
+   DEBUG PANEL FOR FIRE TV REMOTE TESTING
+   ======================================== */
+
+/* Debug panel container - positioned at bottom of screen */
+.debug-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: rgba(0, 0, 0, 0.9);
+    border-top: 2px solid #ffdd44;
+    z-index: 5000;
+    font-family: 'Courier New', monospace;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+}
+
+/* Show debug panel when active */
+.debug-panel.active {
+    display: flex;
+}
+
+/* Debug panel header with controls */
+.debug-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 221, 68, 0.2);
+    border-bottom: 1px solid rgba(255, 221, 68, 0.3);
+}
+
+.debug-header h3 {
+    color: #ffdd44;
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Debug control buttons */
+.debug-toggle-btn,
+.debug-clear-btn {
+    padding: 0.3rem 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.debug-toggle-btn:hover,
+.debug-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffdd44;
+}
+
+/* Debug content area */
+.debug-content {
+    flex: 1;
+    padding: 0.5rem;
+    overflow: hidden;
+}
+
+/* Debug log container */
+.debug-log {
+    height: 100%;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Debug log entries */
+.debug-entry {
+    margin-bottom: 0.3rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+}
+
+/* Different colors for different event types */
+.debug-entry.key-event {
+    color: #00ff00;
+    border-left-color: #00ff00;
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.debug-entry.function-call {
+    color: #ffdd44;
+    border-left-color: #ffdd44;
+    background: rgba(255, 221, 68, 0.1);
+}
+
+.debug-entry.error {
+    color: #ff4444;
+    border-left-color: #ff4444;
+    background: rgba(255, 68, 68, 0.1);
+}
+
+.debug-entry.info {
+    color: #44ddff;
+    border-left-color: #44ddff;
+    background: rgba(68, 221, 255, 0.1);
+}
+
+/* Timestamp styling */
+.debug-timestamp {
+    opacity: 0.6;
+    font-size: 0.7rem;
+}
+
+/* Key event details */
+.debug-key-details {
+    margin-left: 1rem;
+    font-size: 0.7rem;
+    opacity: 0.8;
+}

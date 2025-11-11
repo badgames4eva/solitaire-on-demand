@@ -111,7 +111,7 @@ class TVRemoteHandler {
             'Backspace': 'back',
             'Tab': 'menu',
             // Additional mappings for game functions
-            'KeyH': 'MediaPlayPause',      // H key for Hint (maps to Play/Pause button)
+            'KeyH': 'MediaFastForward',      // H key for Hint (maps to MediaFastForward button)
             'KeyU': 'MediaRewind',  // U key for Undo (maps to Skip Backward button)  
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
         };

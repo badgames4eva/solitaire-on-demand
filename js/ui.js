@@ -643,16 +643,12 @@ class UIManager {
 
     /**
      * Handle application exit with Fire TV best practices
+     * Requires explicit user choice - cannot exit by pressing back multiple times
      */
     handleAppExit() {
-        if (!this.exitWarningShown) {
-            // First back press - show exit warning
-            this.showExitConfirmation();
-            this.exitWarningShown = true;
-        } else {
-            // Second back press - actually exit
-            this.exitApp();
-        }
+        // Always show exit confirmation - never exit automatically
+        this.showExitConfirmation();
+        this.exitWarningShown = true;
     }
 
     /**
@@ -668,10 +664,7 @@ class UIManager {
         modal.innerHTML = `
             <div class="modal-content" style="text-align: center; padding: 2rem; max-width: 500px;">
                 <h2 style="margin-bottom: 1rem; color: #ffdd44;">Exit Solitaire On Demand?</h2>
-                <p style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.4;">
-                    You've reached the end of the back navigation. Press BACK again to exit the app, 
-                    or press any other button to stay and continue playing.
-                </p>
+               
                 <div class="modal-buttons" style="display: flex; gap: 1rem; justify-content: center;">
                     <button id="exit-stay-btn" class="modal-btn focusable" data-action="stay" 
                             style="padding: 1rem 2rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
@@ -682,9 +675,6 @@ class UIManager {
                         Exit App
                     </button>
                 </div>
-                <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-                    Or press BACK again to exit immediately
-                </p>
             </div>
         `;
         
@@ -696,8 +686,13 @@ class UIManager {
         // Focus the "Stay" button by default (safer choice)
         setTimeout(() => {
             const stayButton = modal.querySelector('#exit-stay-btn');
-            if (stayButton && this.tvRemote) {
-                this.tvRemote.focusElement(stayButton);
+            if (stayButton) {
+                stayButton.focus();
+                stayButton.classList.add('focused');
+                // Also use TV remote focus if available
+                if (this.tvRemote) {
+                    this.tvRemote.focusElement(stayButton);
+                }
             }
         }, 100);
         
@@ -716,6 +711,10 @@ class UIManager {
         const stayButton = modal.querySelector('#exit-stay-btn');
         const exitButton = modal.querySelector('#exit-confirm-btn');
         
+        // Make modal focusable and trap focus
+        modal.setAttribute('tabindex', '-1');
+        modal.style.outline = 'none';
+        
         // Handle stay button
         stayButton.addEventListener('click', () => {
             this.dismissExitConfirmation();
@@ -731,46 +730,99 @@ class UIManager {
         let currentFocus = 0;
         
         const handleModalKeydown = (event) => {
+            // Stop all events from propagating to background
+            event.stopPropagation();
+            event.preventDefault();
+            
             switch (event.key) {
                 case 'ArrowLeft':
-                    event.preventDefault();
+                case 'ArrowUp':
                     currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
-                    this.tvRemote.focusElement(buttons[currentFocus]);
+                    buttons[currentFocus].focus();
+                    buttons[currentFocus].classList.add('focused');
+                    buttons[1 - currentFocus].classList.remove('focused');
                     break;
                 case 'ArrowRight':
-                    event.preventDefault();
+                case 'ArrowDown':
+                case 'Tab':
                     currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
-                    this.tvRemote.focusElement(buttons[currentFocus]);
+                    buttons[currentFocus].focus();
+                    buttons[currentFocus].classList.add('focused');
+                    buttons[1 - currentFocus].classList.remove('focused');
                     break;
                 case 'Enter':
                 case ' ':
-                    event.preventDefault();
                     buttons[currentFocus].click();
                     break;
                 case 'Escape':
-                    event.preventDefault();
                     this.dismissExitConfirmation();
+                    break;
+                default:
+                    // Prevent any other keys from reaching background
                     break;
             }
         };
         
-        document.addEventListener('keydown', handleModalKeydown);
+        // Add event listener to modal itself to capture all events
+        modal.addEventListener('keydown', handleModalKeydown, true);
         
-        // Handle TV remote back button in modal (exit immediately)
+        // Also add to document as backup, but with lower priority
+        document.addEventListener('keydown', (event) => {
+            if (modal.classList.contains('active')) {
+                event.stopPropagation();
+                event.preventDefault();
+                handleModalKeydown(event);
+            }
+        }, true);
+        
+        // Handle TV remote back button in modal (dismiss modal - stay in app)
         const handleModalBack = (event) => {
             if (modal.classList.contains('active')) {
                 event.preventDefault();
-                this.exitApp(); // Second back press - exit immediately
+                event.stopPropagation();
+                this.dismissExitConfirmation(); // Back button dismisses modal - stays in app
             }
         };
         
-        document.addEventListener('tvback', handleModalBack);
+        document.addEventListener('tvback', handleModalBack, true);
+        
+        // Prevent clicks outside modal from closing it (force explicit choice)
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Don't close modal - force explicit button choice
+            }
+        });
         
         // Store cleanup function on modal for later removal
         modal._cleanup = () => {
-            document.removeEventListener('keydown', handleModalKeydown);
-            document.removeEventListener('tvback', handleModalBack);
+            document.removeEventListener('keydown', handleModalKeydown, true);
+            document.removeEventListener('tvback', handleModalBack, true);
         };
+        
+        // Focus trap: ensure focus stays within modal
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                if (event.shiftKey) {
+                    // Shift + Tab
+                    if (document.activeElement === firstFocusable) {
+                        event.preventDefault();
+                        lastFocusable.focus();
+                    }
+                } else {
+                    // Tab
+                    if (document.activeElement === lastFocusable) {
+                        event.preventDefault();
+                        firstFocusable.focus();
+                    }
+                }
+            }
+        });
     }
 
     /**
