@@ -1171,6 +1171,9 @@ class UIManager {
         );
         
         if (success) {
+            // Clear selection immediately on successful move to prevent re-selection
+            this.clearSelection();
+            
             this.animateMove(this.selectedSource, { area: targetArea, index: targetIndex });
             this.updateGameDisplay();
             
@@ -1185,9 +1188,10 @@ class UIManager {
             if (this.gameState.gameWon) {
                 this.handleGameWin();
             }
+        } else {
+            // Only clear selection if move failed (for retry)
+            this.clearSelection();
         }
-        
-        this.clearSelection();
     }
 
     /**
