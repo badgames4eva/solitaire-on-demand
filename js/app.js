@@ -30,8 +30,11 @@ function initializeApp() {
         // Setup Fire TV remote button handlers
         setupTVRemoteHandlers();
         
-        // Check if there's a saved game and offer to restore it
-        checkForSavedGame();
+        // Set up custom card back image
+        setupCustomCardBack();
+        
+        // Disable continue game functionality - removed due to blank board issues
+        // checkForSavedGame();
         
         console.log('Solitaire On Demand initialized successfully');
         
@@ -207,10 +210,10 @@ function reloadApp() {
         });
     }
     
-    // Save current game state before reloading
-    if (solitaireGame) {
-        solitaireGame.saveGameState();
-    }
+    // Continue game functionality disabled - no need to save state
+    // if (solitaireGame) {
+    //     solitaireGame.saveGameState();
+    // }
     
     window.location.reload();
 }
@@ -484,6 +487,20 @@ window.debugSolitaire = {
     getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),
     getNavState: () => solitaireGame?.uiManager?.keyboardNavigation
 };
+
+/**
+ * Setup custom card back image
+ */
+function setupCustomCardBack() {
+    try {
+        // Set the custom card back image to the user's specified file
+        Card.setCustomCardBackImage('assets/image/my-card-back.jpg');
+        console.log('Custom card back image set to: assets/image/my-card-back.jpg');
+    } catch (error) {
+        console.warn('Failed to set custom card back image:', error);
+        // Fallback to default card back if there's an issue
+    }
+}
 
 /**
  * Performance monitoring

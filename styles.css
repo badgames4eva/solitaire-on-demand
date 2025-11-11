@@ -373,6 +373,12 @@ body.tv-remote-mode .control-btn.focused::before {
 .card.face-down {
     background: linear-gradient(135deg, #1a4d72 0%, #2d5a87 100%);
     border: 1px solid #0f3a5f;
+    
+    /* Custom card back image support */
+    background-image: var(--card-back-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .card.face-down::before {
@@ -383,6 +389,30 @@ body.tv-remote-mode .control-btn.focused::before {
     transform: translate(-50%, -50%);
     font-size: 1.5rem;
     color: rgba(255, 255, 255, 0.3);
+    
+    /* Hide the Unicode symbol when custom image is used */
+    display: var(--show-card-symbol, block);
+}
+
+/* Custom card back image variants */
+.card.face-down.custom-image {
+    --show-card-symbol: none; /* Hide Unicode symbol when using custom image */
+}
+
+/* Example custom card back images - you can modify these or add your own */
+.card.face-down.royal-pattern {
+    --card-back-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 110"><defs><pattern id="royal" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="%23001f3f"/><circle cx="10" cy="10" r="3" fill="%23ffdc00"/></pattern></defs><rect width="80" height="110" fill="url(%23royal)"/><rect x="5" y="5" width="70" height="100" fill="none" stroke="%23ffdc00" stroke-width="2"/></svg>');
+    --show-card-symbol: none;
+}
+
+.card.face-down.celtic-pattern {
+    --card-back-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 110"><defs><pattern id="celtic" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse"><rect width="15" height="15" fill="%23006400"/><path d="M0,7.5 Q7.5,0 15,7.5 Q7.5,15 0,7.5" fill="%2332cd32"/></pattern></defs><rect width="80" height="110" fill="url(%23celtic)"/><rect x="3" y="3" width="74" height="104" fill="none" stroke="%2332cd32" stroke-width="1"/></svg>');
+    --show-card-symbol: none;
+}
+
+.card.face-down.vintage-pattern {
+    --card-back-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 110"><rect width="80" height="110" fill="%23800000"/><rect x="10" y="10" width="60" height="90" fill="none" stroke="%23ffd700" stroke-width="2"/><rect x="15" y="15" width="50" height="80" fill="none" stroke="%23ffd700" stroke-width="1"/><circle cx="40" cy="55" r="15" fill="none" stroke="%23ffd700" stroke-width="2"/></svg>');
+    --show-card-symbol: none;
 }
 
 .card.selected {

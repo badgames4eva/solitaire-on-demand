@@ -59,6 +59,11 @@ class UIManager {
             }
         });
 
+        // Keyboard event handler
+        document.addEventListener('keydown', (event) => {
+            this.handleKeyboard(event);
+        });
+
         // TV remote back button handler
         document.addEventListener('tvback', (event) => {
             this.handleBackButton();
@@ -116,19 +121,15 @@ class UIManager {
     handleGameNavigation(eventType) {
         switch (eventType) {
             case 'up':
-                this.navigateUp();
                 this.updateKeyboardFocus();
                 break;
             case 'down':
-                this.navigateDown();
                 this.updateKeyboardFocus();
                 break;
             case 'left':
-                this.navigateLeft();
                 this.updateKeyboardFocus();
                 break;
             case 'right':
-                this.navigateRight();
                 this.updateKeyboardFocus();
                 break;
             case 'select':
@@ -241,7 +242,7 @@ class UIManager {
             case 'tableau':
                 if (nav.currentColumn > 0) {
                     nav.currentColumn--;
-                    // Always focus on the last card in the new column (the selectable one)
+                    // Always go to the last card (bottom) of the new column
                     const leftColumn = this.gameState.tableau[nav.currentColumn];
                     nav.currentRow = Math.max(0, leftColumn.length - 1);
                 }
@@ -287,7 +288,7 @@ class UIManager {
             case 'tableau':
                 if (nav.currentColumn < 6) {
                     nav.currentColumn++;
-                    // Always focus on the last card in the new column (the selectable one)
+                    // Always go to the last card (bottom) of the new column
                     const rightColumn = this.gameState.tableau[nav.currentColumn];
                     nav.currentRow = Math.max(0, rightColumn.length - 1);
                 }
@@ -328,7 +329,24 @@ class UIManager {
     navigateUp() {
         const nav = this.keyboardNavigation;
         
-        // Get current focused element
+        // For tableau area, prioritize within-column navigation
+        if (nav.currentArea === 'tableau') {
+            const currentColumn = this.gameState.tableau[nav.currentColumn];
+            if (currentColumn.length > 0 && nav.currentRow > 0) {
+                // Move up within the column (to a lower index card)
+                nav.currentRow--;
+                return;
+            } else if (currentColumn.length > 0 && nav.currentRow === 0) {
+                // At top of column, move to foundation area above it
+                nav.currentArea = 'foundation';
+                // Map tableau columns to foundation piles (0-6 tableau -> 0-3 foundation)
+                nav.currentColumn = Math.min(nav.currentColumn, 3);
+                nav.currentRow = 0;
+                return;
+            }
+        }
+        
+        // For other areas or when fallback is needed, use distance-based navigation
         const currentElement = this.getCurrentFocusElement();
         if (!currentElement) {
             // Fallback to hardcoded navigation
@@ -352,7 +370,19 @@ class UIManager {
     navigateDown() {
         const nav = this.keyboardNavigation;
         
-        // Get current focused element
+        // For tableau area, prioritize within-column navigation
+        if (nav.currentArea === 'tableau') {
+            const currentColumn = this.gameState.tableau[nav.currentColumn];
+            if (currentColumn.length > 0 && nav.currentRow < currentColumn.length - 1) {
+                // Move down within the column (to a higher index card)
+                nav.currentRow++;
+                return;
+            }
+            // If already at bottom of column or empty column, stay there
+            return;
+        }
+        
+        // For other areas, use distance-based navigation
         const currentElement = this.getCurrentFocusElement();
         if (!currentElement) {
             // Fallback to hardcoded navigation
@@ -379,11 +409,18 @@ class UIManager {
         
         switch (nav.currentArea) {
             case 'tableau':
-                // From tableau, go to foundation area above it
-                nav.currentArea = 'foundation';
-                // Map tableau columns to foundation piles (0-6 tableau -> 0-3 foundation)
-                nav.currentColumn = Math.min(nav.currentColumn, 3);
-                nav.currentRow = 0;
+                // Allow vertical movement within tableau columns for multi-card selection
+                const currentColumn = this.gameState.tableau[nav.currentColumn];
+                if (currentColumn.length > 0 && nav.currentRow > 0) {
+                    // Move up within the column (to a lower index card)
+                    nav.currentRow--;
+                } else {
+                    // At top of column, move to foundation area above it
+                    nav.currentArea = 'foundation';
+                    // Map tableau columns to foundation piles (0-6 tableau -> 0-3 foundation)
+                    nav.currentColumn = Math.min(nav.currentColumn, 3);
+                    nav.currentRow = 0;
+                }
                 break;
             case 'foundation':
                 // From foundation, go to control buttons (Hint, Undo, Menu)
@@ -433,7 +470,13 @@ class UIManager {
                 nav.currentRow = Math.max(0, column.length - 1);
                 break;
             case 'tableau':
-                // In tableau, stay in tableau (no vertical movement within columns)
+                // Allow vertical movement within tableau columns for multi-card selection
+                const currentColumn = this.gameState.tableau[nav.currentColumn];
+                if (currentColumn.length > 0 && nav.currentRow < currentColumn.length - 1) {
+                    // Move down within the column (to a higher index card)
+                    nav.currentRow++;
+                }
+                // If already at bottom of column, stay there
                 break;
             case 'stock':
                 // From stock (menu area), go to foundation area
@@ -1005,11 +1048,17 @@ class UIManager {
      * Handle foundation pile click
      */
     handleFoundationClick(foundationIndex) {
-        // Foundation piles are only drop targets, not selectable
-        if (this.selectedCards.length === 1) {
+        const foundationPile = this.gameState.foundation[foundationIndex];
+        
+        if (this.selectedCards.length === 0) {
+            // No cards selected - try to select from foundation if it has cards
+            if (foundationPile.length > 0) {
+                this.selectCards('foundation', foundationIndex, foundationPile.length - 1);
+            }
+        } else {
+            // Cards already selected - try to move them to this foundation
             this.attemptMove('foundation', foundationIndex);
         }
-        // Don't allow selecting cards from foundation piles
     }
 
     /**
@@ -1037,13 +1086,20 @@ class UIManager {
     }
 
     /**
-     * Handle area click (empty areas)
+     * Handle area click (empty areas and foundation piles)
      */
     handleAreaClick(element) {
         if (element.classList.contains('tableau-column')) {
             const column = parseInt(element.dataset.column);
             if (this.gameState.tableau[column].length === 0) {
                 this.attemptMove('tableau', column);
+            }
+        } else if (element.classList.contains('foundation-pile')) {
+            const suit = element.dataset.suit;
+            const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+            const foundationIndex = suits.indexOf(suit);
+            if (foundationIndex !== -1) {
+                this.handleFoundationClick(foundationIndex);
             }
         }
     }
@@ -1073,6 +1129,17 @@ class UIManager {
             // Highlight selected card
             const wasteElement = document.querySelector('.waste-pile');
             const topCard = wasteElement.querySelector('.card:last-child');
+            if (topCard) {
+                topCard.classList.add('selected');
+            }
+        } else if (area === 'foundation') {
+            const foundationPile = this.gameState.foundation[index];
+            this.selectedCards = [foundationPile[foundationPile.length - 1]];
+            
+            // Highlight selected card
+            const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+            const foundationElement = document.querySelector(`[data-suit="${suits[index]}"]`);
+            const topCard = foundationElement.querySelector('.card');
             if (topCard) {
                 topCard.classList.add('selected');
             }
@@ -1186,6 +1253,23 @@ class UIManager {
         
         // Update button states
         this.updateButtonStates();
+    }
+
+    /**
+     * Update difficulty display
+     */
+    updateDifficultyDisplay() {
+        const difficultyElement = document.getElementById('difficulty-display');
+        if (difficultyElement) {
+            difficultyElement.textContent = this.difficultyManager.getCurrentDifficulty().name;
+        }
+    }
+
+    /**
+     * Update game info (alias for updateGameDisplay for compatibility)
+     */
+    updateGameInfo() {
+        this.updateGameDisplay();
     }
 
     /**

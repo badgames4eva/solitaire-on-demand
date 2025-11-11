@@ -152,7 +152,7 @@ class GameState {
         move.cards = cardsToMove.map(card => card.toJSON());
 
         // Validate the move
-        if (!this.isValidMove(cardsToMove, fromArea, toArea, targetCards)) {
+        if (!this.isValidMove(cardsToMove, fromArea, toArea, targetCards, toIndex)) {
             return false;
         }
 
@@ -188,7 +188,7 @@ class GameState {
     /**
      * Check if a move is valid
      */
-    isValidMove(cards, fromArea, toArea, targetCards) {
+    isValidMove(cards, fromArea, toArea, targetCards, toIndex = null) {
         if (cards.length === 0) return false;
 
         const movingCard = cards[0]; // The bottom card being moved
@@ -196,7 +196,22 @@ class GameState {
         if (toArea === 'foundation') {
             // Foundation rules: same suit, ascending rank, only one card at a time
             if (cards.length > 1) return false;
-            return movingCard.canPlaceOnFoundation(targetCards);
+            
+            // Check if the card can be placed on this specific foundation pile
+            if (!movingCard.canPlaceOnFoundation(targetCards)) {
+                return false;
+            }
+            
+            // Additional check: ensure the card goes to the correct suit's foundation pile
+            if (toIndex !== null) {
+                const expectedSuits = ['hearts', 'diamonds', 'clubs', 'spades'];
+                const expectedSuit = expectedSuits[toIndex];
+                if (movingCard.suit !== expectedSuit) {
+                    return false; // Card doesn't match this foundation pile's suit
+                }
+            }
+            
+            return true;
         } else if (toArea === 'tableau') {
             // Tableau rules: alternating colors, descending rank
             const targetCard = targetCards.length > 0 ? targetCards[targetCards.length - 1] : null;

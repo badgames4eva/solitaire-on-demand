@@ -91,7 +91,14 @@ class Card {
      */
     createElement() {
         const cardElement = document.createElement('div');
-        cardElement.className = `card ${this.faceUp ? 'face-up' : 'face-down'} ${this.isRed() ? 'red' : 'black'}`;
+        let cardClasses = `card ${this.faceUp ? 'face-up' : 'face-down'} ${this.isRed() ? 'red' : 'black'}`;
+        
+        // Add custom card back pattern if set and card is face down
+        if (!this.faceUp && Card.cardBackPattern) {
+            cardClasses += ` ${Card.cardBackPattern}`;
+        }
+        
+        cardElement.className = cardClasses;
         cardElement.dataset.cardId = this.id;
         cardElement.dataset.rank = this.rank;
         cardElement.dataset.suit = this.suit;
@@ -176,7 +183,77 @@ class Card {
         card.faceUp = data.faceUp;
         return card;
     }
+
+    /**
+     * Set the global card back pattern for all cards
+     * @param {string} pattern - CSS class name for the card back pattern
+     *   Available patterns: 'royal-pattern', 'celtic-pattern', 'vintage-pattern', 'custom-image'
+     *   Or pass null to use default card back
+     */
+    static setCardBackPattern(pattern) {
+        Card.cardBackPattern = pattern;
+        // Re-render all existing face-down cards with new pattern
+        Card.updateExistingCardBacks();
+    }
+
+    /**
+     * Set a custom card back image URL
+     * @param {string} imageUrl - URL to the custom card back image
+     */
+    static setCustomCardBackImage(imageUrl) {
+        // Create CSS custom property for the image
+        document.documentElement.style.setProperty('--card-back-image', `url(${imageUrl})`);
+        Card.setCardBackPattern('custom-image');
+    }
+
+    /**
+     * Get the current card back pattern
+     */
+    static getCardBackPattern() {
+        return Card.cardBackPattern || null;
+    }
+
+    /**
+     * Reset to default card back (no custom pattern)
+     */
+    static resetCardBack() {
+        Card.cardBackPattern = null;
+        document.documentElement.style.removeProperty('--card-back-image');
+        Card.updateExistingCardBacks();
+    }
+
+    /**
+     * Update all existing face-down cards to use the current pattern
+     * This is called automatically when the pattern changes
+     */
+    static updateExistingCardBacks() {
+        const faceDownCards = document.querySelectorAll('.card.face-down');
+        faceDownCards.forEach(cardElement => {
+            // Remove existing pattern classes
+            cardElement.classList.remove('royal-pattern', 'celtic-pattern', 'vintage-pattern', 'custom-image');
+            
+            // Add new pattern if set
+            if (Card.cardBackPattern) {
+                cardElement.classList.add(Card.cardBackPattern);
+            }
+        });
+    }
+
+    /**
+     * Get available predefined card back patterns
+     */
+    static getAvailablePatterns() {
+        return [
+            { name: 'Default', value: null, description: 'Classic blue gradient with card symbol' },
+            { name: 'Royal', value: 'royal-pattern', description: 'Elegant royal blue with gold accents' },
+            { name: 'Celtic', value: 'celtic-pattern', description: 'Green Celtic knot pattern' },
+            { name: 'Vintage', value: 'vintage-pattern', description: 'Classic maroon and gold design' }
+        ];
+    }
 }
+
+// Initialize the static card back pattern property
+Card.cardBackPattern = null;
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
