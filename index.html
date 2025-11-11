@@ -60,9 +60,18 @@
                 
                 <!-- Right side: Game control buttons -->
                 <div class="game-controls">
-                    <button class="control-btn focusable" id="hint-btn">Hint</button>    <!-- Show available moves -->
-                    <button class="control-btn focusable" id="undo-btn">Undo</button>    <!-- Undo last move -->
-                    <button class="control-btn focusable" id="menu-btn">Menu</button>    <!-- Return to main menu -->
+                    <button class="control-btn focusable" id="hint-btn">
+                        <span class="btn-text">Hint</span>
+                        <span class="remote-button-hint"></span>
+                    </button>    <!-- Show available moves -->
+                    <button class="control-btn focusable" id="undo-btn">
+                        <span class="btn-text">Undo</span>
+                        <span class="remote-button-hint"></span>
+                    </button>    <!-- Undo last move -->
+                    <button class="control-btn focusable" id="menu-btn">
+                        <span class="btn-text">Menu</span>
+                        <span class="remote-button-hint"></span>
+                    </button>    <!-- Return to main menu -->
                 </div>
             </div>
 
@@ -84,6 +93,12 @@
                 <!-- Stock: Face-down cards that can be drawn from -->
                 <!-- Waste: Face-up cards drawn from stock, top card is playable -->
                 <div class="stock-area">
+                    <!-- Fire TV Remote Hint for Stock Pile -->
+                    <div class="remote-hint" id="stock-hint">
+                        <span class="hint-icon">⏯️</span>
+                        <span class="hint-text">Press Play/Pause to draw cards</span>
+                    </div>
+                    
                     <div class="stock-pile" data-area="stock"></div>      <!-- Click to draw cards -->
                     <div class="waste-pile" data-area="waste"></div>      <!-- Drawn cards appear here -->
                 </div>

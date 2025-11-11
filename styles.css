@@ -152,6 +152,20 @@ body {
     gap: 0.5rem; /* Space between text and remote indicator */
 }
 
+/* Remote button hint styling for control buttons */
+.remote-button-hint {
+    font-size: 1rem;
+    opacity: 0.7;
+    color: #ffdd44;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+    margin-left: auto; /* Push to right side of button */
+}
+
+.control-btn:hover .remote-button-hint,
+.control-btn.focused .remote-button-hint {
+    opacity: 1;
+}
+
 /* Control button hover and focus states */
 .control-btn:hover,
 .control-btn.focused {
@@ -174,18 +188,11 @@ body.tv-remote-mode .control-btn::after {
 
 /* Specific button indicators for Fire TV remote using your provided icons */
 body.tv-remote-mode #hint-btn::after {
-    content: "⏯️"; /* Play/pause icon for hint */
+    content: "⏩"; /* Play/pause icon for hint */
 }
 
 body.tv-remote-mode #undo-btn::after {
     content: "⏪"; /* Rewind/skip backward icon for undo */
-}
-
-body.tv-remote-mode #menu-btn::after {
-    content: "☰"; /* Menu hamburger icon */
-}
-body.tv-remote-mode #menu-btn::after {
-    content: "☰"; /* Menu hamburger icon */
 }
 
 body.tv-remote-mode #menu-btn::after {
@@ -294,6 +301,35 @@ body.tv-remote-mode .control-btn.focused::before {
     gap: 1rem; /* Space between stock and waste piles */
     justify-content: flex-start; /* Align to left side of grid cell */
     align-items: flex-start;
+    position: relative; /* Allow absolute positioning of hint */
+}
+
+/* Stock and waste piles container - no longer needed, removing wrapper */
+.stock-waste-piles {
+    display: flex;
+    gap: 1rem; /* Space between stock and waste piles */
+    align-items: flex-start;
+}
+
+/* Remote control hints positioning - align with score area */
+.remote-hint {
+    position: absolute;
+    top: -3rem; /* Position above the game board, aligned with header */
+    left: 15%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /*background: rgba(0, 0, 0, 0.7);*/
+    color: #ffffff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    /*border: 1px solid rgba(255, 221, 68, 0.3);*/
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    z-index: 10;
 }
 
 /* Stock pile (face-down cards) and waste pile (face-up drawn cards) */
@@ -319,6 +355,23 @@ body.tv-remote-mode .control-btn.focused::before {
     
     /* Keep the gradient as fallback */
     background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Remote control hints hover and icon styling */
+.remote-hint:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 221, 68, 0.5);
+}
+
+.remote-hint .hint-icon {
+    font-size: 1rem;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.remote-hint .hint-text {
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Focus states for TV remote navigation */

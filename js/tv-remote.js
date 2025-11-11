@@ -111,8 +111,8 @@ class TVRemoteHandler {
             'Backspace': 'back',
             'Tab': 'menu',
             // Additional mappings for game functions
-            'KeyH': 'playpause',      // H key for Hint (maps to Play/Pause button)
-            'KeyU': 'skip_backward',  // U key for Undo (maps to Skip Backward button)  
+            'KeyH': 'MediaPlayPause',      // H key for Hint (maps to Play/Pause button)
+            'KeyU': 'MediaRewind',  // U key for Undo (maps to Skip Backward button)  
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
         };
         return keyMap[key];
@@ -175,11 +175,12 @@ class TVRemoteHandler {
             case 'menu':
                 this.handleMenu();
                 break;
-            case 'play':
+            case 'MediaPlayPause':
             case 'playpause':
                 this.handlePlay();
                 break;
             case 'skip_backward':
+            case 'MediaRewind':
                 this.handleSkipBackward();
                 break;
         }

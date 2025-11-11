@@ -48,146 +48,116 @@ function initializeApp() {
 }
 
 /**
- * Setup Fire TV remote button handlers
- * Maps Fire TV remote buttons to game functions:
- * - Menu button → Menu action
- * - Play button → Hint action
- * - Back button → Undo action
+ * Setup Fire TV remote button handlers using standard keydown events
+ * Maps Fire TV remote buttons to game functions using reliable key codes
  */
 function setupTVRemoteHandlers() {
-    // Handle Menu button press
-    document.addEventListener('tvmenu', (event) => {
-        console.log('TV Menu button pressed');
+    document.addEventListener('keydown', (event) => {
+        // Only handle Fire TV remote keys when solitaire game is active
+        if (!solitaireGame) return;
         
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - return to main menu
-                solitaireGame.uiManager.showScreen('main-menu');
-            } else {
-                // In other screens - try to go back or to main menu
-                solitaireGame.uiManager.showScreen('main-menu');
-            }
-        }
-    });
-    
-    // Handle Play button press (for Hint functionality)
-    document.addEventListener('tvplay', (event) => {
-        console.log('TV Play button pressed (Hint)');
+        const currentScreen = document.querySelector('.screen.active');
+        const key = event.key;
+        const code = event.code;
         
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // Only show hints in game screen
-                const hintBtn = document.getElementById('hint-btn');
-                if (hintBtn && !hintBtn.disabled) {
-                    hintBtn.click();
-                }
-            }
-        }
-    });
-    
-    // Handle Skip Backward button press (for Undo functionality)
-    document.addEventListener('tvskipbackward', (event) => {
-        console.log('TV Skip Backward button pressed (Undo)');
+        console.log('Fire TV Key pressed:', key, 'Code:', code);
         
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - try to undo move
-                const undoBtn = document.getElementById('undo-btn');
-                if (undoBtn && !undoBtn.disabled) {
-                    undoBtn.click();
-                } else {
-                    // If undo not available, go back to menu
-                    solitaireGame.uiManager.showScreen('main-menu');
-                }
-            } else {
-                // In other screens - go back to main menu
-                solitaireGame.uiManager.showScreen('main-menu');
-            }
-        }
-    });
-
-    // Handle Media Rewind button press (for Undo functionality - alternative mapping)
-    document.addEventListener('tvrewind', (event) => {
-        console.log('TV Rewind button pressed (Undo)');
-        
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - try to undo move
-                const undoBtn = document.getElementById('undo-btn');
-                if (undoBtn && !undoBtn.disabled) {
-                    undoBtn.click();
-                }
-            }
-        }
-    });
-
-    // Handle Media Play/Pause button press (for Hint functionality - alternative mapping)
-    document.addEventListener('tvplaypause', (event) => {
-        console.log('TV Play/Pause button pressed (Hint)');
-        
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - show hint
-                const hintBtn = document.getElementById('hint-btn');
-                if (hintBtn && !hintBtn.disabled) {
-                    hintBtn.click();
-                }
-            }
-        }
-    });
-
-    // Handle Media Fast Forward button press (for Auto-Complete functionality)
-    document.addEventListener('tvfastforward', (event) => {
-        console.log('TV Fast Forward button pressed (Auto-Complete)');
-        
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - try auto-complete if available
-                if (solitaireGame.gameState && solitaireGame.gameState.autoCompleteAvailable) {
-                    if (confirm('Auto-complete the remaining moves?')) {
-                        solitaireGame.uiManager.performAutoComplete();
+        switch (key) {
+            // Play/Pause button - Draw from stock
+            case 'MediaPlayPause':
+            case 'playpause': 
+                if (event.code === 'Space' && currentScreen?.id === 'game-screen') {
+                    event.preventDefault();
+                    console.log('Play/Pause button pressed - Drawing from stock');
+                    const stockPile = document.querySelector('.stock-pile');
+                    if (stockPile) {
+                        stockPile.click();
                     }
-                } else {
-                    // If auto-complete not available, show hint instead
+                }
+                break;
+                
+            // Fast Forward button - Show hint  
+            case 'MediaFastForward':
+                if (currentScreen?.id === 'game-screen') {
+                    event.preventDefault();
+                    console.log('Fast Forward button pressed - Showing hint');
                     const hintBtn = document.getElementById('hint-btn');
                     if (hintBtn && !hintBtn.disabled) {
                         hintBtn.click();
                     }
                 }
-            }
+                break;
+                
+            // Rewind button - Undo move
+            case 'MediaRewind':
+                if (currentScreen?.id === 'game-screen') {
+                    event.preventDefault();
+                    console.log('Rewind button pressed - Undo move');
+                    const undoBtn = document.getElementById('undo-btn');
+                    if (undoBtn && !undoBtn.disabled) {
+                        undoBtn.click();
+                    }
+                }
+                break;
+                
+            // Menu button
+            case 'ContextMenu':
+            case 'F1': // Some Fire TV devices map menu to F1
+                event.preventDefault();
+                console.log('Menu button pressed');
+                if (currentScreen?.id === 'game-screen') {
+                    solitaireGame.uiManager.showScreen('main-menu');
+                } else {
+                    solitaireGame.uiManager.showScreen('main-menu');
+                }
+                break;
+                
+            // Back button - Enhanced navigation
+            case 'GoBack':
+            case 'back':
+            case 'Escape': // Fallback for back button
+                event.preventDefault();
+                console.log('Back button pressed');
+                solitaireGame.uiManager.handleBackButton();
+                break;
+                
+            // Additional Fire TV remote mappings
+            case 'MediaTrackPrevious': // Skip backward
+                if (currentScreen?.id === 'game-screen') {
+                    event.preventDefault();
+                    console.log('Skip Backward button pressed - Undo move');
+                    const undoBtn = document.getElementById('undo-btn');
+                    if (undoBtn && !undoBtn.disabled) {
+                        undoBtn.click();
+                    } else {
+                        solitaireGame.uiManager.showScreen('main-menu');
+                    }
+                }
+                break;
+                
+            case 'MediaPlay': // Dedicated play button
+                if (currentScreen?.id === 'game-screen') {
+                    event.preventDefault();
+                    console.log('Play button pressed - Showing hint');
+                    const hintBtn = document.getElementById('hint-btn');
+                    if (hintBtn && !hintBtn.disabled) {
+                        hintBtn.click();
+                    }
+                }
+                break;
         }
-    });
-
-    // Handle Back button press (navigation back)
-    document.addEventListener('tvback', (event) => {
-        console.log('TV Back button pressed');
         
-        if (solitaireGame) {
-            const currentScreen = document.querySelector('.screen.active');
-            
-            if (currentScreen && currentScreen.id === 'game-screen') {
-                // In game screen - go back to menu
-                solitaireGame.uiManager.showScreen('main-menu');
-            } else {
-                // In other screens - go back to main menu
-                solitaireGame.uiManager.showScreen('main-menu');
+        // Handle numeric keys for quick column selection in game
+        if (currentScreen?.id === 'game-screen' && /^Digit[1-7]$/.test(code)) {
+            const column = parseInt(key) - 1;
+            if (column >= 0 && column < 7) {
+                event.preventDefault();
+                solitaireGame.uiManager.selectTableauColumn(column);
             }
         }
     });
     
-    console.log('Fire TV remote handlers initialized');
+    console.log('Fire TV remote handlers initialized with standard keydown events');
 }
 
 /**

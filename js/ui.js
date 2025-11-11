@@ -1306,6 +1306,11 @@ class UIManager {
             this.renderStock();
             this.renderWaste();
             this.updateGameDisplay();
+            
+            // Auto-select the newly revealed card from waste pile for intuitive gameplay
+            if (this.gameState.waste.length > 0) {
+                this.selectCards('waste', 0, this.gameState.waste.length - 1);
+            }
         }
     }
 
