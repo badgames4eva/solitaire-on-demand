@@ -135,7 +135,11 @@ class TVRemoteHandler {
             'Tab': 'menu',
             // Additional mappings for game functions
 <<<<<<< HEAD
+<<<<<<< HEAD
             'KeyH': 'playpause',      // H key for Hint (maps to Play/Pause button)
+=======
+            'KeyH': 'play',           // H key for Hint (maps to Play button)
+>>>>>>> parent of 472bfe1 (refactor: standardize TV remote event names and add exit functionality)
             'KeyU': 'skip_backward',  // U key for Undo (maps to Skip Backward button)  
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
 =======
@@ -205,7 +209,6 @@ class TVRemoteHandler {
                 this.handleMenu();
                 break;
             case 'play':
-            case 'playpause':
                 this.handlePlay();
                 break;
 <<<<<<< HEAD
