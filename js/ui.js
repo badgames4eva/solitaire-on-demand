@@ -74,6 +74,16 @@ class UIManager {
             this.handleMenuButton();
         });
 
+        // TV remote play button handler (for Hint function)
+        document.addEventListener('tvplay', (event) => {
+            this.showHint();
+        });
+
+        // TV remote rewind button handler (for Undo function)
+        document.addEventListener('tvrewind', (event) => {
+            this.undoMove();
+        });
+
         // Card interaction handlers
         document.addEventListener('click', (event) => {
             if (event.target.closest('.stock-pile')) {
@@ -849,7 +859,8 @@ class UIManager {
         switch (action) {
             case 'new-game':
                 const difficulty = element.dataset.difficulty || 'medium';
-                this.startNewGame(difficulty);
+                const gameType = element.dataset.gameType || 'klondike';
+                this.startNewGame(difficulty, gameType);
                 break;
             case 'stats':
                 this.showScreen('stats-screen');
@@ -861,7 +872,7 @@ class UIManager {
                 this.showScreen('main-menu');
                 break;
             case 'new-game-same':
-                this.startNewGame(this.gameState.difficulty);
+                this.startNewGame(this.gameState.difficulty, this.gameState.gameType);
                 break;
             default:
                 console.log('Unknown action:', action);
@@ -886,16 +897,106 @@ class UIManager {
     /**
      * Start a new game
      */
-    startNewGame(difficulty) {
+    startNewGame(difficulty, gameType = 'klondike') {
+        // Create new game state with the specified game type
+        this.gameState = new GameState(gameType);
         this.difficultyManager.setDifficulty(difficulty);
-        this.gameState.newGame(difficulty);
+        this.gameState.newGame(difficulty, gameType);
+        
+        // Update UI for game type
+        this.setupGameTypeUI(gameType);
         
         // Update difficulty display
-        document.getElementById('difficulty-display').textContent = 
-            this.difficultyManager.getCurrentDifficulty().name;
+        const difficultyName = this.difficultyManager.getCurrentDifficulty().name;
+        const gameTypeName = gameType === 'spider' ? 'Spider' : 'Klondike';
+        document.getElementById('difficulty-display').textContent = `${gameTypeName} ${difficultyName}`;
         
         this.showScreen('game-screen');
         this.updateGameDisplay();
+    }
+
+    /**
+     * Setup UI for specific game type
+     */
+    setupGameTypeUI(gameType) {
+        // Add/remove CSS classes for game type
+        document.body.classList.remove('spider-mode', 'klondike-mode');
+        document.body.classList.add(`${gameType}-mode`);
+        
+        if (gameType === 'spider') {
+            // Update tableau for 10 columns
+            this.setupSpiderTableau();
+            // Hide completed sequences display
+            this.renderCompletedSequences();
+        } else {
+            // Reset to 7 columns for Klondike
+            this.setupKlondikeTableau();
+        }
+    }
+
+    /**
+     * Setup tableau for Spider solitaire (10 columns)
+     */
+    setupSpiderTableau() {
+        const tableauArea = document.querySelector('.tableau-area');
+        tableauArea.innerHTML = '';
+        
+        // Create 10 columns for Spider
+        for (let i = 0; i < 10; i++) {
+            const column = document.createElement('div');
+            column.className = 'tableau-column';
+            column.dataset.column = i;
+            column.dataset.area = 'tableau';
+            tableauArea.appendChild(column);
+        }
+        
+        // Update navigation limits
+        this.keyboardNavigation.maxColumns = 9; // 0-9 for Spider
+    }
+
+    /**
+     * Setup tableau for Klondike solitaire (7 columns)
+     */
+    setupKlondikeTableau() {
+        const tableauArea = document.querySelector('.tableau-area');
+        tableauArea.innerHTML = '';
+        
+        // Create 7 columns for Klondike
+        for (let i = 0; i < 7; i++) {
+            const column = document.createElement('div');
+            column.className = 'tableau-column';
+            column.dataset.column = i;
+            column.dataset.area = 'tableau';
+            tableauArea.appendChild(column);
+        }
+        
+        // Update navigation limits
+        this.keyboardNavigation.maxColumns = 6; // 0-6 for Klondike
+    }
+
+    /**
+     * Render completed sequences for Spider solitaire
+     */
+    renderCompletedSequences() {
+        if (this.gameState.gameType !== 'spider') return;
+        
+        let sequencesContainer = document.getElementById('completed-sequences');
+        if (!sequencesContainer) {
+            sequencesContainer = document.createElement('div');
+            sequencesContainer.id = 'completed-sequences';
+            sequencesContainer.className = 'completed-sequences';
+            document.body.appendChild(sequencesContainer);
+        }
+        
+        sequencesContainer.innerHTML = '';
+        
+        // Render each completed sequence
+        this.gameState.completedSequences.forEach((sequence, index) => {
+            const sequenceElement = document.createElement('div');
+            sequenceElement.className = 'completed-sequence';
+            sequenceElement.textContent = `${sequence[0].getSuitSymbol()} K-A`;
+            sequencesContainer.appendChild(sequenceElement);
+        });
     }
 
     /**
@@ -913,9 +1014,13 @@ class UIManager {
      * Render tableau columns
      */
     renderTableau() {
-        for (let col = 0; col < 7; col++) {
+        const columnCount = this.gameState.tableau.length; // 7 for Klondike, 10 for Spider
+        
+        for (let col = 0; col < columnCount; col++) {
             const column = this.gameState.tableau[col];
             const columnElement = document.querySelector(`[data-column="${col}"]`);
+            
+            if (!columnElement) continue; // Skip if column doesn't exist in DOM
             
             // Clear existing cards
             columnElement.innerHTML = '';
@@ -941,24 +1046,36 @@ class UIManager {
                 columnElement.appendChild(cardElement);
             });
         }
+        
+        // Render completed sequences for Spider
+        if (this.gameState.gameType === 'spider') {
+            this.renderCompletedSequences();
+        }
     }
 
     /**
      * Render foundation piles
      */
     renderFoundation() {
+        // Skip foundation rendering for Spider solitaire
+        if (this.gameState.gameType === 'spider') {
+            return;
+        }
+        
         const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
         
         for (let i = 0; i < 4; i++) {
             const pile = this.gameState.foundation[i];
             const pileElement = document.querySelector(`[data-suit="${suits[i]}"]`);
             
+            if (!pileElement) continue; // Skip if element doesn't exist
+            
             // Clear existing cards
             const existingCards = pileElement.querySelectorAll('.card');
             existingCards.forEach(card => card.remove());
             
             // Render top card if any
-            if (pile.length > 0) {
+            if (pile && pile.length > 0) {
                 const topCard = pile[pile.length - 1];
                 const cardElement = topCard.createElement();
                 
@@ -1089,7 +1206,32 @@ class UIManager {
         if (this.gameState.drawFromStock()) {
             this.renderStock();
             this.renderWaste();
+            
+            // For Spider solitaire, also update the tableau since cards are dealt there
+            if (this.gameState.gameType === 'spider') {
+                this.renderTableau();
+            }
+            
             this.updateGameDisplay();
+        } else {
+            // Provide feedback when stock can't be dealt from
+            if (this.gameState.gameType === 'spider') {
+                // Check specific Spider solitaire conditions
+                if (this.gameState.stock.length < 10) {
+                    this.showMessage('Not enough cards in stock to deal (need 10 cards).');
+                } else {
+                    // Check for empty columns
+                    const emptyColumns = this.gameState.tableau.filter(col => col.length === 0).length;
+                    if (emptyColumns > 0) {
+                        this.showMessage('Cannot deal from stock while there are empty columns. Fill all columns first.');
+                    } else {
+                        this.showMessage('Cannot deal from stock at this time.');
+                    }
+                }
+            } else {
+                // Klondike solitaire - no cards available
+                this.showMessage('No more cards in stock.');
+            }
         }
     }
 
@@ -1681,7 +1823,7 @@ class UIManager {
     /**
      * Show a temporary message
      */
-    showMessage(message, duration = 3000) {
+    showMessage(message, duration = 5000) {
         // Create or update message element
         let messageEl = document.getElementById('game-message');
         if (!messageEl) {
@@ -1689,15 +1831,20 @@ class UIManager {
             messageEl.id = 'game-message';
             messageEl.style.cssText = `
                 position: fixed;
-                top: 50%;
+                top: 20%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
+                background: rgba(255, 0, 0, 0.9);
                 color: white;
-                padding: 1rem 2rem;
-                border-radius: 8px;
-                z-index: 3000;
-                font-size: 1.1rem;
+                padding: 1.5rem 2.5rem;
+                border-radius: 12px;
+                z-index: 5000;
+                font-size: 1.3rem;
+                font-weight: bold;
+                border: 3px solid white;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                max-width: 80%;
+                text-align: center;
             `;
             document.body.appendChild(messageEl);
         }
@@ -1705,7 +1852,12 @@ class UIManager {
         messageEl.textContent = message;
         messageEl.style.display = 'block';
         
-        setTimeout(() => {
+        // Clear any existing timeout
+        if (messageEl.hideTimeout) {
+            clearTimeout(messageEl.hideTimeout);
+        }
+        
+        messageEl.hideTimeout = setTimeout(() => {
             messageEl.style.display = 'none';
         }, duration);
     }

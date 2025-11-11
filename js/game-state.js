@@ -1,12 +1,15 @@
 /**
  * GameState class for managing the current state of the solitaire game
  * Tracks all game data including card positions, score, timing, and move history
+ * Supports both Klondike and Spider solitaire variants
  */
 class GameState {
     /**
      * Initialize a new game state with default values
+     * @param {string} gameType - 'klondike' or 'spider'
      */
-    constructor() {
+    constructor(gameType = 'klondike') {
+        this.gameType = gameType; // Track which solitaire variant we're playing
         this.reset(); // Set all properties to their initial state
     }
 
@@ -15,11 +18,21 @@ class GameState {
      * Clears all card positions, resets counters, and initializes empty arrays
      */
     reset() {
-        // Card layout areas
-        this.tableau = [[], [], [], [], [], [], []]; // 7 columns for main playing area
-        this.foundation = [[], [], [], []]; // 4 foundation piles (hearts, diamonds, clubs, spades)
+        // Initialize layout based on game type
+        if (this.gameType === 'spider') {
+            // Spider solitaire: 10 columns, no foundation piles
+            this.tableau = [[], [], [], [], [], [], [], [], [], []]; // 10 columns for Spider
+            this.foundation = []; // No foundation piles in Spider
+            this.completedSequences = []; // Completed K-A sequences (Spider-specific)
+            this.spiderSuits = 1; // Number of suits (1, 2, or 4)
+        } else {
+            // Klondike solitaire: 7 columns, 4 foundation piles
+            this.tableau = [[], [], [], [], [], [], []]; // 7 columns for Klondike
+            this.foundation = [[], [], [], []]; // 4 foundation piles (hearts, diamonds, clubs, spades)
+        }
+        
         this.stock = []; // Remaining cards to draw from (face down)
-        this.waste = []; // Cards drawn from stock (face up)
+        this.waste = []; // Cards drawn from stock (face up) - not used in Spider
         
         // Selection state for moving cards
         this.selectedCards = []; // Currently selected cards for moving
@@ -53,31 +66,42 @@ class GameState {
     /**
      * Initialize a new game with the given difficulty
      */
-    newGame(difficulty = 'medium') {
+    newGame(difficulty = 'medium', gameType = null) {
+        if (gameType) {
+            this.gameType = gameType;
+        }
+        
         this.reset();
         this.difficulty = difficulty;
-        this.drawCount = difficulty === 'hard' ? 3 : 1;
         this.startTime = Date.now();
 
         const deck = new Deck();
         let deal;
 
-        switch (difficulty) {
-            case 'easy':
-                deal = deck.createWinnableDeal();
-                break;
-            case 'hard':
-                deal = deck.createHardDeal();
-                break;
-            default: // medium
-                deal = deck.deal();
-                break;
-        }
+        if (this.gameType === 'spider') {
+            // Spider solitaire setup
+            this.setupSpiderGame(difficulty, deck);
+        } else {
+            // Klondike solitaire setup
+            this.drawCount = difficulty === 'hard' ? 3 : 1;
+            
+            switch (difficulty) {
+                case 'easy':
+                    deal = deck.createWinnableDeal();
+                    break;
+                case 'hard':
+                    deal = deck.createHardDeal();
+                    break;
+                default: // medium
+                    deal = deck.deal();
+                    break;
+            }
 
-        this.tableau = deal.tableau;
-        this.foundation = deal.foundation;
-        this.stock = deal.stock;
-        this.waste = deal.waste;
+            this.tableau = deal.tableau;
+            this.foundation = deal.foundation;
+            this.stock = deal.stock;
+            this.waste = deal.waste;
+        }
 
         this.checkAutoComplete();
         
@@ -90,9 +114,40 @@ class GameState {
     }
 
     /**
-     * Draw cards from stock to waste pile
+     * Setup Spider solitaire game
+     */
+    setupSpiderGame(difficulty, deck) {
+        // Set number of suits based on difficulty
+        switch (difficulty) {
+            case 'easy':
+                this.spiderSuits = 1; // One suit (spades only)
+                break;
+            case 'medium':
+                this.spiderSuits = 2; // Two suits (spades and hearts)
+                break;
+            case 'hard':
+                this.spiderSuits = 4; // All four suits
+                break;
+            default:
+                this.spiderSuits = 2;
+        }
+
+        // Create Spider deal
+        const deal = deck.dealSpider(this.spiderSuits);
+        this.tableau = deal.tableau;
+        this.stock = deal.stock;
+        this.completedSequences = [];
+    }
+
+    /**
+     * Draw cards from stock to waste pile (Klondike) or deal to tableau (Spider)
      */
     drawFromStock() {
+        if (this.gameType === 'spider') {
+            return this.dealSpiderCards();
+        }
+
+        // Klondike logic
         if (this.stock.length === 0) {
             // Recycle waste pile back to stock
             if (this.waste.length === 0) {
@@ -124,6 +179,96 @@ class GameState {
             type: 'draw-stock',
             count: cardsToDraw
         });
+
+        return true;
+    }
+
+    /**
+     * Deal cards from stock to tableau in Spider solitaire
+     */
+    dealSpiderCards() {
+        if (this.stock.length < 10) {
+            return false; // Need at least 10 cards to deal
+        }
+
+        // Check if all columns have at least one card
+        for (const column of this.tableau) {
+            if (column.length === 0) {
+                return false; // Cannot deal to empty columns
+            }
+        }
+
+        // Deal one card to each column
+        for (let i = 0; i < 10; i++) {
+            const card = this.stock.pop();
+            card.faceUp = true;
+            this.tableau[i].push(card);
+        }
+
+        this.recordMove({
+            type: 'deal-spider-cards',
+            count: 10
+        });
+
+        // Check for completed sequences after dealing
+        this.checkForCompletedSequences();
+
+        return true;
+    }
+
+    /**
+     * Check for completed sequences in Spider solitaire (K-A same suit)
+     */
+    checkForCompletedSequences() {
+        if (this.gameType !== 'spider') return;
+
+        for (let colIndex = 0; colIndex < this.tableau.length; colIndex++) {
+            const column = this.tableau[colIndex];
+            
+            // Need at least 13 cards for a complete sequence
+            if (column.length < 13) continue;
+
+            // Check from the end of the column backwards
+            for (let startIndex = column.length - 13; startIndex >= 0; startIndex--) {
+                if (this.isCompleteSequence(column, startIndex)) {
+                    // Remove the complete sequence
+                    const sequence = column.splice(startIndex, 13);
+                    this.completedSequences.push(sequence);
+                    this.score += 100; // Bonus for completing a sequence
+                    
+                    // Flip the next card if it exists and is face down
+                    if (column.length > startIndex && !column[startIndex].faceUp) {
+                        column[startIndex].faceUp = true;
+                    }
+                    
+                    // Check for more sequences in the same column
+                    this.checkForCompletedSequences();
+                    return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if cards form a complete sequence (K-A same suit)
+     */
+    isCompleteSequence(column, startIndex) {
+        if (startIndex + 13 > column.length) return false;
+
+        const firstCard = column[startIndex];
+        if (firstCard.rank !== 13) return false; // Must start with King
+
+        // Check if all 13 cards are same suit and descending
+        for (let i = 0; i < 13; i++) {
+            const card = column[startIndex + i];
+            const expectedRank = 13 - i; // K=13, Q=12, ..., A=1
+            
+            if (!card.faceUp || 
+                card.suit !== firstCard.suit || 
+                card.rank !== expectedRank) {
+                return false;
+            }
+        }
 
         return true;
     }
@@ -213,12 +358,73 @@ class GameState {
             
             return true;
         } else if (toArea === 'tableau') {
-            // Tableau rules: alternating colors, descending rank
+            // Tableau rules vary by game type
             const targetCard = targetCards.length > 0 ? targetCards[targetCards.length - 1] : null;
-            return movingCard.canPlaceOnTableau(targetCard);
+            
+            if (this.gameType === 'spider') {
+                // Spider: any suit allowed for single cards, same suit for sequences
+                if (cards.length === 1) {
+                    return movingCard.canPlaceOnTableau(targetCard, 'spider');
+                } else {
+                    // For sequences, all cards must be same suit and in descending order
+                    return this.isValidSpiderSequence(cards) && 
+                           movingCard.canPlaceOnTableau(targetCard, 'spider');
+                }
+            } else {
+                // Klondike rules: check both placement and sequence validity
+                if (cards.length === 1) {
+                    // Single card move
+                    return movingCard.canPlaceOnTableau(targetCard, 'klondike');
+                } else {
+                    // Multiple card move: must form valid Klondike sequence
+                    return this.isValidKlondikeSequence(cards) && 
+                           movingCard.canPlaceOnTableau(targetCard, 'klondike');
+                }
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Check if cards form a valid Spider sequence (same suit, descending order)
+     */
+    isValidSpiderSequence(cards) {
+        if (cards.length <= 1) return true;
+
+        const firstCard = cards[0];
+        for (let i = 1; i < cards.length; i++) {
+            const currentCard = cards[i];
+            const previousCard = cards[i - 1];
+            
+            // Must be same suit and descending rank
+            if (currentCard.suit !== firstCard.suit || 
+                currentCard.rank !== previousCard.rank - 1) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Check if cards form a valid Klondike sequence (alternating colors, descending order)
+     */
+    isValidKlondikeSequence(cards) {
+        if (cards.length <= 1) return true;
+
+        for (let i = 1; i < cards.length; i++) {
+            const currentCard = cards[i];
+            const previousCard = cards[i - 1];
+            
+            // Must be alternating colors and descending rank
+            if (currentCard.isRed() === previousCard.isRed() || 
+                currentCard.rank !== previousCard.rank - 1) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -272,13 +478,23 @@ class GameState {
      * Check if the game is won
      */
     checkWinCondition() {
-        // Game is won when all foundation piles have 13 cards
-        const totalFoundationCards = this.foundation.reduce((sum, pile) => sum + pile.length, 0);
-        
-        if (totalFoundationCards === 52) {
-            this.gameWon = true;
-            this.endTime = Date.now();
-            this.score += this.calculateTimeBonus();
+        if (this.gameType === 'spider') {
+            // Spider solitaire: game is won when all sequences are completed
+            const expectedSequences = this.spiderSuits === 1 ? 4 : 8; // 4 sequences for 1-suit, 8 for 2/4-suit
+            if (this.completedSequences.length >= expectedSequences) {
+                this.gameWon = true;
+                this.endTime = Date.now();
+                this.score += this.calculateTimeBonus();
+            }
+        } else {
+            // Klondike solitaire: game is won when all foundation piles have 13 cards
+            const totalFoundationCards = this.foundation.reduce((sum, pile) => sum + pile.length, 0);
+            
+            if (totalFoundationCards === 52) {
+                this.gameWon = true;
+                this.endTime = Date.now();
+                this.score += this.calculateTimeBonus();
+            }
         }
     }
 
@@ -303,8 +519,13 @@ class GameState {
      * Check if auto-complete is available
      */
     checkAutoComplete() {
-        // Auto-complete is available when all tableau cards are face up
-        // and can be moved to foundations
+        if (this.gameType === 'spider') {
+            // Spider solitaire: auto-complete not implemented yet
+            this.autoCompleteAvailable = false;
+            return;
+        }
+
+        // Klondike auto-complete logic
         let allFaceUp = true;
         
         for (const column of this.tableau) {
@@ -414,15 +635,26 @@ class GameState {
      * Create a snapshot of the current game state
      */
     createSnapshot() {
-        return {
+        const snapshot = {
             tableau: this.tableau.map(column => column.map(card => card.toJSON())),
-            foundation: this.foundation.map(pile => pile.map(card => card.toJSON())),
             stock: this.stock.map(card => card.toJSON()),
-            waste: this.waste.map(card => card.toJSON()),
             score: this.score,
             stockCycles: this.stockCycles,
-            emptyColumnsCreated: this.emptyColumnsCreated
+            emptyColumnsCreated: this.emptyColumnsCreated,
+            gameType: this.gameType
         };
+
+        // Add game-type specific properties
+        if (this.gameType === 'spider') {
+            snapshot.completedSequences = this.completedSequences.map(seq => seq.map(card => card.toJSON()));
+            snapshot.spiderSuits = this.spiderSuits;
+        } else {
+            // Klondike specific properties
+            snapshot.foundation = this.foundation.map(pile => pile.map(card => card.toJSON()));
+            snapshot.waste = this.waste.map(card => card.toJSON());
+        }
+
+        return snapshot;
     }
 
     /**
@@ -430,12 +662,25 @@ class GameState {
      */
     restoreSnapshot(snapshot) {
         this.tableau = snapshot.tableau.map(column => column.map(cardData => Card.fromJSON(cardData)));
-        this.foundation = snapshot.foundation.map(pile => pile.map(cardData => Card.fromJSON(cardData)));
         this.stock = snapshot.stock.map(cardData => Card.fromJSON(cardData));
-        this.waste = snapshot.waste.map(cardData => Card.fromJSON(cardData));
         this.score = snapshot.score;
         this.stockCycles = snapshot.stockCycles;
         this.emptyColumnsCreated = snapshot.emptyColumnsCreated;
+        this.gameType = snapshot.gameType || this.gameType;
+
+        // Restore game-type specific properties
+        if (this.gameType === 'spider') {
+            this.completedSequences = snapshot.completedSequences ? 
+                snapshot.completedSequences.map(seq => seq.map(cardData => Card.fromJSON(cardData))) : [];
+            this.spiderSuits = snapshot.spiderSuits || 1;
+        } else {
+            // Klondike specific properties
+            this.foundation = snapshot.foundation ? 
+                snapshot.foundation.map(pile => pile.map(cardData => Card.fromJSON(cardData))) : [[], [], [], []];
+            this.waste = snapshot.waste ? 
+                snapshot.waste.map(cardData => Card.fromJSON(cardData)) : [];
+        }
+
         this.checkAutoComplete();
     }
 
@@ -473,11 +718,9 @@ class GameState {
      * Serialize game state to JSON for saving
      */
     toJSON() {
-        return {
+        const json = {
             tableau: this.tableau.map(column => column.map(card => card.toJSON())),
-            foundation: this.foundation.map(pile => pile.map(card => card.toJSON())),
             stock: this.stock.map(card => card.toJSON()),
-            waste: this.waste.map(card => card.toJSON()),
             difficulty: this.difficulty,
             drawCount: this.drawCount,
             moves: this.moves,
@@ -488,8 +731,21 @@ class GameState {
             gameLost: this.gameLost,
             stockCycles: this.stockCycles,
             emptyColumnsCreated: this.emptyColumnsCreated,
-            autoCompleteAvailable: this.autoCompleteAvailable
+            autoCompleteAvailable: this.autoCompleteAvailable,
+            gameType: this.gameType
         };
+
+        // Add game-type specific properties
+        if (this.gameType === 'spider') {
+            json.completedSequences = this.completedSequences.map(seq => seq.map(card => card.toJSON()));
+            json.spiderSuits = this.spiderSuits;
+        } else {
+            // Klondike specific properties
+            json.foundation = this.foundation.map(pile => pile.map(card => card.toJSON()));
+            json.waste = this.waste.map(card => card.toJSON());
+        }
+
+        return json;
     }
 
     /**

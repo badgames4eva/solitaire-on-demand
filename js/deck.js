@@ -306,6 +306,108 @@ class Deck {
     }
 
     /**
+     * Deal cards for Spider Solitaire
+     * Uses 2 decks (104 cards) with specified number of suits
+     * @param {number} suitCount - 1, 2, or 4 suits to use
+     */
+    dealSpider(suitCount = 2) {
+        // Create Spider deck with specified number of suits
+        this.createSpiderDeck(suitCount);
+        this.shuffle();
+        
+        const tableau = [[], [], [], [], [], [], [], [], [], []]; // 10 columns
+        const stock = [];
+        
+        let cardIndex = 0;
+        
+        // Deal initial tableau: 6 cards to first 4 columns, 5 cards to last 6 columns
+        // First 4 columns get 6 cards each (24 cards total)
+        for (let col = 0; col < 4; col++) {
+            for (let row = 0; row < 6; row++) {
+                const card = this.cards[cardIndex++];
+                // Only the last card in each column is face up
+                if (row === 5) {
+                    card.faceUp = true;
+                }
+                tableau[col].push(card);
+            }
+        }
+        
+        // Last 6 columns get 5 cards each (30 cards total)
+        for (let col = 4; col < 10; col++) {
+            for (let row = 0; row < 5; row++) {
+                const card = this.cards[cardIndex++];
+                // Only the last card in each column is face up
+                if (row === 4) {
+                    card.faceUp = true;
+                }
+                tableau[col].push(card);
+            }
+        }
+        
+        // Remaining 50 cards go to stock (104 - 54 = 50)
+        while (cardIndex < this.cards.length) {
+            stock.push(this.cards[cardIndex++]);
+        }
+        
+        return {
+            tableau,
+            stock,
+            foundation: [], // No foundation in Spider
+            waste: [] // No waste pile in Spider
+        };
+    }
+
+    /**
+     * Create a Spider solitaire deck with specified number of suits
+     * @param {number} suitCount - 1, 2, or 4 suits to use
+     */
+    createSpiderDeck(suitCount = 2) {
+        this.cards = [];
+        const ranks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+        
+        // Determine which suits to use
+        let suits;
+        switch (suitCount) {
+            case 1:
+                suits = ['spades']; // One suit Spider (easiest)
+                break;
+            case 2:
+                suits = ['spades', 'hearts']; // Two suit Spider (medium)
+                break;
+            case 4:
+                suits = ['hearts', 'diamonds', 'clubs', 'spades']; // Four suit Spider (hardest)
+                break;
+            default:
+                suits = ['spades', 'hearts'];
+        }
+        
+        // Create 2 complete decks (104 cards total)
+        for (let deck = 0; deck < 2; deck++) {
+            // For 1-suit and 2-suit Spider, we need to fill out to 4 suits per deck
+            // but use only the specified suits
+            const suitsToUse = [];
+            
+            if (suitCount === 1) {
+                // All 52 cards are spades
+                suitsToUse.push('spades', 'spades', 'spades', 'spades');
+            } else if (suitCount === 2) {
+                // 26 spades, 26 hearts per deck
+                suitsToUse.push('spades', 'spades', 'hearts', 'hearts');
+            } else {
+                // Normal 4-suit deck
+                suitsToUse.push('hearts', 'diamonds', 'clubs', 'spades');
+            }
+            
+            for (const suit of suitsToUse) {
+                for (const rank of ranks) {
+                    this.cards.push(new Card(rank, suit));
+                }
+            }
+        }
+    }
+
+    /**
      * Create deck from existing cards (for loading saved games)
      */
     static fromCards(cards) {
