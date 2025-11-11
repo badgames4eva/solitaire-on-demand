@@ -57,37 +57,17 @@ class Card {
 
     /**
      * Check if this card can be placed on another card in the tableau
-     * Rules vary by game type: Klondike (alternating colors) vs Spider (same suit or any suit)
+     * (alternating colors, descending rank)
      */
-    canPlaceOnTableau(otherCard, gameType = 'klondike') {
+    canPlaceOnTableau(otherCard) {
         if (!otherCard) {
             // Can only place King on empty tableau column
             return this.rank === 13;
         }
 
-        if (gameType === 'spider') {
-            // Spider rules: descending rank, any suit allowed (but same suit preferred)
-            return this.rank === otherCard.rank - 1;
-        } else {
-            // Klondike rules: alternating colors, descending rank
-            return (this.isRed() !== otherCard.isRed()) && 
-                   (this.rank === otherCard.rank - 1);
-        }
-    }
-
-    /**
-     * Check if this card can be placed on another card in Spider solitaire
-     * (same suit, descending rank - for moving sequences)
-     */
-    canPlaceOnSpiderTableau(otherCard) {
-        if (!otherCard) {
-            // Can only place King on empty tableau column
-            return this.rank === 13;
-        }
-
-        // Spider: same suit and one rank lower for sequence building
-        return this.suit === otherCard.suit && 
-               this.rank === otherCard.rank - 1;
+        // Must be alternating colors and one rank lower
+        return (this.isRed() !== otherCard.isRed()) && 
+               (this.rank === otherCard.rank - 1);
     }
 
     /**

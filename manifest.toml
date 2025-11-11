@@ -6,7 +6,7 @@ name = "Solitaire On Demand"
 version = "1.0.0"
 description = "A progressive web app for Klondike Solitaire with TV remote support and multiple difficulty levels"
 author = "Solitaire On Demand Team"
-homepage = "https://badgames4eva.github.io/solitaire-on-demand/"
+homepage = "https://solitaire-on-demand.app"
 
 [app.display]
 orientation = "landscape"

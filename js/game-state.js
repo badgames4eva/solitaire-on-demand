@@ -1,15 +1,12 @@
 /**
  * GameState class for managing the current state of the solitaire game
  * Tracks all game data including card positions, score, timing, and move history
- * Supports both Klondike and Spider solitaire variants
  */
 class GameState {
     /**
      * Initialize a new game state with default values
-     * @param {string} gameType - 'klondike' or 'spider'
      */
-    constructor(gameType = 'klondike') {
-        this.gameType = gameType; // Track which solitaire variant we're playing
+    constructor() {
         this.reset(); // Set all properties to their initial state
     }
 
@@ -18,21 +15,11 @@ class GameState {
      * Clears all card positions, resets counters, and initializes empty arrays
      */
     reset() {
-        // Initialize layout based on game type
-        if (this.gameType === 'spider') {
-            // Spider solitaire: 10 columns, no foundation piles
-            this.tableau = [[], [], [], [], [], [], [], [], [], []]; // 10 columns for Spider
-            this.foundation = []; // No foundation piles in Spider
-            this.completedSequences = []; // Completed K-A sequences (Spider-specific)
-            this.spiderSuits = 1; // Number of suits (1, 2, or 4)
-        } else {
-            // Klondike solitaire: 7 columns, 4 foundation piles
-            this.tableau = [[], [], [], [], [], [], []]; // 7 columns for Klondike
-            this.foundation = [[], [], [], []]; // 4 foundation piles (hearts, diamonds, clubs, spades)
-        }
-        
+        // Card layout areas
+        this.tableau = [[], [], [], [], [], [], []]; // 7 columns for main playing area
+        this.foundation = [[], [], [], []]; // 4 foundation piles (hearts, diamonds, clubs, spades)
         this.stock = []; // Remaining cards to draw from (face down)
-        this.waste = []; // Cards drawn from stock (face up) - not used in Spider
+        this.waste = []; // Cards drawn from stock (face up)
         
         // Selection state for moving cards
         this.selectedCards = []; // Currently selected cards for moving
@@ -66,42 +53,31 @@ class GameState {
     /**
      * Initialize a new game with the given difficulty
      */
-    newGame(difficulty = 'medium', gameType = null) {
-        if (gameType) {
-            this.gameType = gameType;
-        }
-        
+    newGame(difficulty = 'medium') {
         this.reset();
         this.difficulty = difficulty;
+        this.drawCount = difficulty === 'hard' ? 3 : 1;
         this.startTime = Date.now();
 
         const deck = new Deck();
         let deal;
 
-        if (this.gameType === 'spider') {
-            // Spider solitaire setup
-            this.setupSpiderGame(difficulty, deck);
-        } else {
-            // Klondike solitaire setup
-            this.drawCount = difficulty === 'hard' ? 3 : 1;
-            
-            switch (difficulty) {
-                case 'easy':
-                    deal = deck.createWinnableDeal();
-                    break;
-                case 'hard':
-                    deal = deck.createHardDeal();
-                    break;
-                default: // medium
-                    deal = deck.deal();
-                    break;
-            }
-
-            this.tableau = deal.tableau;
-            this.foundation = deal.foundation;
-            this.stock = deal.stock;
-            this.waste = deal.waste;
+        switch (difficulty) {
+            case 'easy':
+                deal = deck.createWinnableDeal();
+                break;
+            case 'hard':
+                deal = deck.createHardDeal();
+                break;
+            default: // medium
+                deal = deck.deal();
+                break;
         }
+
+        this.tableau = deal.tableau;
+        this.foundation = deal.foundation;
+        this.stock = deal.stock;
+        this.waste = deal.waste;
 
         this.checkAutoComplete();
         
@@ -114,40 +90,9 @@ class GameState {
     }
 
     /**
-     * Setup Spider solitaire game
-     */
-    setupSpiderGame(difficulty, deck) {
-        // Set number of suits based on difficulty
-        switch (difficulty) {
-            case 'easy':
-                this.spiderSuits = 1; // One suit (spades only)
-                break;
-            case 'medium':
-                this.spiderSuits = 2; // Two suits (spades and hearts)
-                break;
-            case 'hard':
-                this.spiderSuits = 4; // All four suits
-                break;
-            default:
-                this.spiderSuits = 2;
-        }
-
-        // Create Spider deal
-        const deal = deck.dealSpider(this.spiderSuits);
-        this.tableau = deal.tableau;
-        this.stock = deal.stock;
-        this.completedSequences = [];
-    }
-
-    /**
-     * Draw cards from stock to waste pile (Klondike) or deal to tableau (Spider)
+     * Draw cards from stock to waste pile
      */
     drawFromStock() {
-        if (this.gameType === 'spider') {
-            return this.dealSpiderCards();
-        }
-
-        // Klondike logic
         if (this.stock.length === 0) {
             // Recycle waste pile back to stock
             if (this.waste.length === 0) {
@@ -179,96 +124,6 @@ class GameState {
             type: 'draw-stock',
             count: cardsToDraw
         });
-
-        return true;
-    }
-
-    /**
-     * Deal cards from stock to tableau in Spider solitaire
-     */
-    dealSpiderCards() {
-        if (this.stock.length < 10) {
-            return false; // Need at least 10 cards to deal
-        }
-
-        // Check if all columns have at least one card
-        for (const column of this.tableau) {
-            if (column.length === 0) {
-                return false; // Cannot deal to empty columns
-            }
-        }
-
-        // Deal one card to each column
-        for (let i = 0; i < 10; i++) {
-            const card = this.stock.pop();
-            card.faceUp = true;
-            this.tableau[i].push(card);
-        }
-
-        this.recordMove({
-            type: 'deal-spider-cards',
-            count: 10
-        });
-
-        // Check for completed sequences after dealing
-        this.checkForCompletedSequences();
-
-        return true;
-    }
-
-    /**
-     * Check for completed sequences in Spider solitaire (K-A same suit)
-     */
-    checkForCompletedSequences() {
-        if (this.gameType !== 'spider') return;
-
-        for (let colIndex = 0; colIndex < this.tableau.length; colIndex++) {
-            const column = this.tableau[colIndex];
-            
-            // Need at least 13 cards for a complete sequence
-            if (column.length < 13) continue;
-
-            // Check from the end of the column backwards
-            for (let startIndex = column.length - 13; startIndex >= 0; startIndex--) {
-                if (this.isCompleteSequence(column, startIndex)) {
-                    // Remove the complete sequence
-                    const sequence = column.splice(startIndex, 13);
-                    this.completedSequences.push(sequence);
-                    this.score += 100; // Bonus for completing a sequence
-                    
-                    // Flip the next card if it exists and is face down
-                    if (column.length > startIndex && !column[startIndex].faceUp) {
-                        column[startIndex].faceUp = true;
-                    }
-                    
-                    // Check for more sequences in the same column
-                    this.checkForCompletedSequences();
-                    return;
-                }
-            }
-        }
-    }
-
-    /**
-     * Check if cards form a complete sequence (K-A same suit)
-     */
-    isCompleteSequence(column, startIndex) {
-        if (startIndex + 13 > column.length) return false;
-
-        const firstCard = column[startIndex];
-        if (firstCard.rank !== 13) return false; // Must start with King
-
-        // Check if all 13 cards are same suit and descending
-        for (let i = 0; i < 13; i++) {
-            const card = column[startIndex + i];
-            const expectedRank = 13 - i; // K=13, Q=12, ..., A=1
-            
-            if (!card.faceUp || 
-                card.suit !== firstCard.suit || 
-                card.rank !== expectedRank) {
-                return false;
-            }
-        }
 
         return true;
     }

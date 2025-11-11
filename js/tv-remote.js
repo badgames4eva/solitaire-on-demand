@@ -144,7 +144,7 @@ class TVRemoteHandler {
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
 =======
             'KeyH': 'play',    // H key for Hint (maps to Play button)
-            'KeyU': 'rewind',  // U key for Undo (maps to Rewind button)  
+            'KeyU': 'back',    // U key for Undo (maps to Back button)  
             'KeyM': 'menu'     // M key for Menu (maps to Menu button)
 >>>>>>> main
         };
@@ -212,6 +212,7 @@ class TVRemoteHandler {
                 this.handlePlay();
                 break;
 <<<<<<< HEAD
+<<<<<<< HEAD
             case 'skip_backward':
                 this.handleSkipBackward();
 =======
@@ -219,6 +220,8 @@ class TVRemoteHandler {
                 this.handleRewind();
 >>>>>>> main
                 break;
+=======
+>>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
         }
     }
 
@@ -620,6 +623,7 @@ class TVRemoteHandler {
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
      * Handle skip backward button press (used for Undo function)
      */
     handleSkipBackward() {
@@ -641,6 +645,8 @@ class TVRemoteHandler {
     }
 
     /**
+=======
+>>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
      * Handle long select press
      */
     handleLongSelect() {

@@ -74,16 +74,6 @@ class UIManager {
             this.handleMenuButton();
         });
 
-        // TV remote play button handler (for Hint function)
-        document.addEventListener('tvplay', (event) => {
-            this.showHint();
-        });
-
-        // TV remote rewind button handler (for Undo function)
-        document.addEventListener('tvrewind', (event) => {
-            this.undoMove();
-        });
-
         // Card interaction handlers
         document.addEventListener('click', (event) => {
             if (event.target.closest('.stock-pile')) {
@@ -859,8 +849,7 @@ class UIManager {
         switch (action) {
             case 'new-game':
                 const difficulty = element.dataset.difficulty || 'medium';
-                const gameType = element.dataset.gameType || 'klondike';
-                this.startNewGame(difficulty, gameType);
+                this.startNewGame(difficulty);
                 break;
             case 'stats':
                 this.showScreen('stats-screen');
@@ -872,7 +861,7 @@ class UIManager {
                 this.showScreen('main-menu');
                 break;
             case 'new-game-same':
-                this.startNewGame(this.gameState.difficulty, this.gameState.gameType);
+                this.startNewGame(this.gameState.difficulty);
                 break;
             default:
                 console.log('Unknown action:', action);
@@ -897,106 +886,16 @@ class UIManager {
     /**
      * Start a new game
      */
-    startNewGame(difficulty, gameType = 'klondike') {
-        // Create new game state with the specified game type
-        this.gameState = new GameState(gameType);
+    startNewGame(difficulty) {
         this.difficultyManager.setDifficulty(difficulty);
-        this.gameState.newGame(difficulty, gameType);
-        
-        // Update UI for game type
-        this.setupGameTypeUI(gameType);
+        this.gameState.newGame(difficulty);
         
         // Update difficulty display
-        const difficultyName = this.difficultyManager.getCurrentDifficulty().name;
-        const gameTypeName = gameType === 'spider' ? 'Spider' : 'Klondike';
-        document.getElementById('difficulty-display').textContent = `${gameTypeName} ${difficultyName}`;
+        document.getElementById('difficulty-display').textContent = 
+            this.difficultyManager.getCurrentDifficulty().name;
         
         this.showScreen('game-screen');
         this.updateGameDisplay();
-    }
-
-    /**
-     * Setup UI for specific game type
-     */
-    setupGameTypeUI(gameType) {
-        // Add/remove CSS classes for game type
-        document.body.classList.remove('spider-mode', 'klondike-mode');
-        document.body.classList.add(`${gameType}-mode`);
-        
-        if (gameType === 'spider') {
-            // Update tableau for 10 columns
-            this.setupSpiderTableau();
-            // Hide completed sequences display
-            this.renderCompletedSequences();
-        } else {
-            // Reset to 7 columns for Klondike
-            this.setupKlondikeTableau();
-        }
-    }
-
-    /**
-     * Setup tableau for Spider solitaire (10 columns)
-     */
-    setupSpiderTableau() {
-        const tableauArea = document.querySelector('.tableau-area');
-        tableauArea.innerHTML = '';
-        
-        // Create 10 columns for Spider
-        for (let i = 0; i < 10; i++) {
-            const column = document.createElement('div');
-            column.className = 'tableau-column';
-            column.dataset.column = i;
-            column.dataset.area = 'tableau';
-            tableauArea.appendChild(column);
-        }
-        
-        // Update navigation limits
-        this.keyboardNavigation.maxColumns = 9; // 0-9 for Spider
-    }
-
-    /**
-     * Setup tableau for Klondike solitaire (7 columns)
-     */
-    setupKlondikeTableau() {
-        const tableauArea = document.querySelector('.tableau-area');
-        tableauArea.innerHTML = '';
-        
-        // Create 7 columns for Klondike
-        for (let i = 0; i < 7; i++) {
-            const column = document.createElement('div');
-            column.className = 'tableau-column';
-            column.dataset.column = i;
-            column.dataset.area = 'tableau';
-            tableauArea.appendChild(column);
-        }
-        
-        // Update navigation limits
-        this.keyboardNavigation.maxColumns = 6; // 0-6 for Klondike
-    }
-
-    /**
-     * Render completed sequences for Spider solitaire
-     */
-    renderCompletedSequences() {
-        if (this.gameState.gameType !== 'spider') return;
-        
-        let sequencesContainer = document.getElementById('completed-sequences');
-        if (!sequencesContainer) {
-            sequencesContainer = document.createElement('div');
-            sequencesContainer.id = 'completed-sequences';
-            sequencesContainer.className = 'completed-sequences';
-            document.body.appendChild(sequencesContainer);
-        }
-        
-        sequencesContainer.innerHTML = '';
-        
-        // Render each completed sequence
-        this.gameState.completedSequences.forEach((sequence, index) => {
-            const sequenceElement = document.createElement('div');
-            sequenceElement.className = 'completed-sequence';
-            sequenceElement.textContent = `${sequence[0].getSuitSymbol()} K-A`;
-            sequencesContainer.appendChild(sequenceElement);
-        });
     }
 
     /**
@@ -1014,13 +913,9 @@ class UIManager {
      * Render tableau columns
      */
     renderTableau() {
-        const columnCount = this.gameState.tableau.length; // 7 for Klondike, 10 for Spider
-        
-        for (let col = 0; col < columnCount; col++) {
+        for (let col = 0; col < 7; col++) {
             const column = this.gameState.tableau[col];
             const columnElement = document.querySelector(`[data-column="${col}"]`);
-            
-            if (!columnElement) continue; // Skip if column doesn't exist in DOM
             
             // Clear existing cards
             columnElement.innerHTML = '';
@@ -1045,11 +940,6 @@ class UIManager {
                 
                 columnElement.appendChild(cardElement);
             });
-        }
-        
-        // Render completed sequences for Spider
-        if (this.gameState.gameType === 'spider') {
-            this.renderCompletedSequences();
         }
     }
 
