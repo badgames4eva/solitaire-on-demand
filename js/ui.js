@@ -34,6 +34,10 @@ class UIManager {
             currentArea: 'tableau'                   // Current game area: tableau, foundation, stock, waste, controls
         };
         
+        // Screen navigation history for proper back button handling
+        this.screenHistory = [];                      // Stack of previous screens for back navigation
+        this.exitWarningShown = false;               // Flag to track if exit warning has been shown
+        
         this.init(); // Initialize the UI system
     }
 
@@ -121,15 +125,19 @@ class UIManager {
     handleGameNavigation(eventType) {
         switch (eventType) {
             case 'up':
+                this.navigateUp();
                 this.updateKeyboardFocus();
                 break;
             case 'down':
+                this.navigateDown();
                 this.updateKeyboardFocus();
                 break;
             case 'left':
+                this.navigateLeft();
                 this.updateKeyboardFocus();
                 break;
             case 'right':
+                this.navigateRight();
                 this.updateKeyboardFocus();
                 break;
             case 'select':
@@ -161,18 +169,18 @@ class UIManager {
         }
 
         switch (key) {
-            // Navigation
+            // Navigation - handled by TV remote system
             case 'arrowleft':
-                this.navigateLeft();
+                // Navigation handled by handleGameNavigation via TV remote system
                 break;
             case 'arrowright':
-                this.navigateRight();
+                // Navigation handled by handleGameNavigation via TV remote system
                 break;
             case 'arrowup':
-                this.navigateUp();
+                // Navigation handled by handleGameNavigation via TV remote system
                 break;
             case 'arrowdown':
-                this.navigateDown();
+                // Navigation handled by handleGameNavigation via TV remote system
                 break;
             
             // Actions
@@ -609,20 +617,219 @@ class UIManager {
     }
 
     /**
-     * Handle TV remote back button
+     * Handle TV remote back button with history tracking and exit confirmation
      */
     handleBackButton() {
-        switch (this.currentScreen) {
-            case 'game-screen':
-                this.showScreen('main-menu');
-                break;
-            case 'stats-screen':
-            case 'settings-screen':
-                this.showScreen('main-menu');
-                break;
-            case 'main-menu':
-                // Could show exit confirmation
-                break;
+        console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
+        
+        // If there's history, go back to the previous screen
+        if (this.screenHistory.length > 0) {
+            const previousScreen = this.screenHistory.pop();
+            console.log('Going back to:', previousScreen);
+            this.showScreen(previousScreen, false); // Don't add to history when going back
+            this.exitWarningShown = false; // Reset exit warning
+            return;
+        }
+        
+        // If we're at the main menu with no history, handle exit confirmation
+        if (this.currentScreen === 'main-menu') {
+            this.handleAppExit();
+            return;
+        }
+        
+        // For any other screen without history, go to main menu
+        this.showScreen('main-menu');
+    }
+
+    /**
+     * Handle application exit with Fire TV best practices
+     */
+    handleAppExit() {
+        if (!this.exitWarningShown) {
+            // First back press - show exit warning
+            this.showExitConfirmation();
+            this.exitWarningShown = true;
+        } else {
+            // Second back press - actually exit
+            this.exitApp();
+        }
+    }
+
+    /**
+     * Show exit confirmation popup following Fire TV guidelines
+     */
+    showExitConfirmation() {
+        // Create exit confirmation modal
+        const modal = document.createElement('div');
+        modal.id = 'exit-confirmation-modal';
+        modal.className = 'modal active';
+        modal.style.zIndex = '5000';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="text-align: center; padding: 2rem; max-width: 500px;">
+                <h2 style="margin-bottom: 1rem; color: #ffdd44;">Exit Solitaire On Demand?</h2>
+                <p style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.4;">
+                    You've reached the end of the back navigation. Press BACK again to exit the app, 
+                    or press any other button to stay and continue playing.
+                </p>
+                <div class="modal-buttons" style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="exit-stay-btn" class="modal-btn focusable" data-action="stay" 
+                            style="padding: 1rem 2rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Stay & Play
+                    </button>
+                    <button id="exit-confirm-btn" class="modal-btn" data-action="exit"
+                            style="padding: 1rem 2rem; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Exit App
+                    </button>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+                    Or press BACK again to exit immediately
+                </p>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Setup exit modal handlers
+        this.setupExitModalHandlers(modal);
+        
+        // Focus the "Stay" button by default (safer choice)
+        setTimeout(() => {
+            const stayButton = modal.querySelector('#exit-stay-btn');
+            if (stayButton && this.tvRemote) {
+                this.tvRemote.focusElement(stayButton);
+            }
+        }, 100);
+        
+        // Auto-dismiss after 10 seconds (stay in app)
+        setTimeout(() => {
+            if (document.getElementById('exit-confirmation-modal')) {
+                this.dismissExitConfirmation();
+            }
+        }, 10000);
+    }
+
+    /**
+     * Setup exit confirmation modal handlers
+     */
+    setupExitModalHandlers(modal) {
+        const stayButton = modal.querySelector('#exit-stay-btn');
+        const exitButton = modal.querySelector('#exit-confirm-btn');
+        
+        // Handle stay button
+        stayButton.addEventListener('click', () => {
+            this.dismissExitConfirmation();
+        });
+        
+        // Handle exit button
+        exitButton.addEventListener('click', () => {
+            this.exitApp();
+        });
+        
+        // Handle keyboard/remote navigation within modal
+        const buttons = [stayButton, exitButton];
+        let currentFocus = 0;
+        
+        const handleModalKeydown = (event) => {
+            switch (event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
+                    this.tvRemote.focusElement(buttons[currentFocus]);
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
+                    this.tvRemote.focusElement(buttons[currentFocus]);
+                    break;
+                case 'Enter':
+                case ' ':
+                    event.preventDefault();
+                    buttons[currentFocus].click();
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    this.dismissExitConfirmation();
+                    break;
+            }
+        };
+        
+        document.addEventListener('keydown', handleModalKeydown);
+        
+        // Handle TV remote back button in modal (exit immediately)
+        const handleModalBack = (event) => {
+            if (modal.classList.contains('active')) {
+                event.preventDefault();
+                this.exitApp(); // Second back press - exit immediately
+            }
+        };
+        
+        document.addEventListener('tvback', handleModalBack);
+        
+        // Store cleanup function on modal for later removal
+        modal._cleanup = () => {
+            document.removeEventListener('keydown', handleModalKeydown);
+            document.removeEventListener('tvback', handleModalBack);
+        };
+    }
+
+    /**
+     * Dismiss exit confirmation and return to game
+     */
+    dismissExitConfirmation() {
+        const modal = document.getElementById('exit-confirmation-modal');
+        if (modal) {
+            // Clean up event listeners
+            if (modal._cleanup) {
+                modal._cleanup();
+            }
+            modal.remove();
+        }
+        this.exitWarningShown = false; // Reset exit warning
+        
+        // Refresh TV remote focus
+        setTimeout(() => {
+            if (this.tvRemote) {
+                this.tvRemote.refresh();
+            }
+        }, 100);
+    }
+
+    /**
+     * Exit the application using Fire TV best practices
+     */
+    exitApp() {
+        console.log('Exiting Solitaire On Demand application');
+        
+        // Save any pending game state or settings
+        try {
+            // if (this.gameState && this.currentScreen === 'game-screen') {
+            //     this.gameState.saveGameState(); // Disabled due to blank board issues
+            // }
+            this.saveSettings();
+        } catch (error) {
+            console.error('Error saving state before exit:', error);
+        }
+        
+        // For Fire TV apps, we can attempt different exit strategies
+        if (window.close) {
+            window.close(); // Try to close the window
+        } else if (window.history && window.history.length > 1) {
+            window.history.back(); // Try to go back in browser history
+        } else {
+            // Fallback: Navigate to a blank page or show exit message
+            document.body.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; 
+                            background: #2d5a27; color: white; font-family: Arial, sans-serif; text-align: center;">
+                    <div>
+                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">Thank You!</h1>
+                        <p style="font-size: 1.2rem;">Thanks for playing Solitaire On Demand</p>
+                        <p style="font-size: 1rem; margin-top: 2rem; opacity: 0.8;">
+                            You can now use your remote to navigate to another app
+                        </p>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -649,9 +856,15 @@ class UIManager {
     }
 
     /**
-     * Show screen by ID and manage screen transitions
+     * Show screen by ID and manage screen transitions with history tracking
      */
-    showScreen(screenId) {
+    showScreen(screenId, addToHistory = true) {
+        // Add current screen to history before switching (unless it's the first screen)
+        if (addToHistory && this.currentScreen && this.currentScreen !== screenId) {
+            this.screenHistory.push(this.currentScreen);
+            console.log('Added to history:', this.currentScreen, 'History:', this.screenHistory);
+        }
+        
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
@@ -662,6 +875,9 @@ class UIManager {
         if (targetScreen) {
             targetScreen.classList.add('active');
             this.currentScreen = screenId;
+            
+            // Reset exit warning when changing screens
+            this.exitWarningShown = false;
             
             // Initialize screen-specific functionality
             switch (screenId) {

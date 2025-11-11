@@ -112,6 +112,64 @@ function setupTVRemoteHandlers() {
         }
     });
 
+    // Handle Media Rewind button press (for Undo functionality - alternative mapping)
+    document.addEventListener('tvrewind', (event) => {
+        console.log('TV Rewind button pressed (Undo)');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - try to undo move
+                const undoBtn = document.getElementById('undo-btn');
+                if (undoBtn && !undoBtn.disabled) {
+                    undoBtn.click();
+                }
+            }
+        }
+    });
+
+    // Handle Media Play/Pause button press (for Hint functionality - alternative mapping)
+    document.addEventListener('tvplaypause', (event) => {
+        console.log('TV Play/Pause button pressed (Hint)');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - show hint
+                const hintBtn = document.getElementById('hint-btn');
+                if (hintBtn && !hintBtn.disabled) {
+                    hintBtn.click();
+                }
+            }
+        }
+    });
+
+    // Handle Media Fast Forward button press (for Auto-Complete functionality)
+    document.addEventListener('tvfastforward', (event) => {
+        console.log('TV Fast Forward button pressed (Auto-Complete)');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - try auto-complete if available
+                if (solitaireGame.gameState && solitaireGame.gameState.autoCompleteAvailable) {
+                    if (confirm('Auto-complete the remaining moves?')) {
+                        solitaireGame.uiManager.performAutoComplete();
+                    }
+                } else {
+                    // If auto-complete not available, show hint instead
+                    const hintBtn = document.getElementById('hint-btn');
+                    if (hintBtn && !hintBtn.disabled) {
+                        hintBtn.click();
+                    }
+                }
+            }
+        }
+    });
+
     // Handle Back button press (navigation back)
     document.addEventListener('tvback', (event) => {
         console.log('TV Back button pressed');
