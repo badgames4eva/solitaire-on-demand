@@ -20,7 +20,7 @@ class TVRemoteHandler {
      */
     init() {
         // Check if we're running on Fire TV
-        this.isFireTV = this.detectFireTV();
+        this.isFireTV = true;//hardcoded for now this.detectFireTV();
         
         if (this.isFireTV) {
             this.initFireTVHandler();
@@ -30,7 +30,7 @@ class TVRemoteHandler {
         }
 
         // Add TV remote mode class to body for visual indicators
-        // This enables the display of Fire TV remote button icons (⏯️, ↩️, ☰)
+        // This enables the display of Fire TV remote button icons (⏯️, ⏪, ☰)
         document.body.classList.add('tv-remote-mode');
 
         // Initialize focus management
@@ -111,25 +111,9 @@ class TVRemoteHandler {
             'Backspace': 'back',
             'Tab': 'menu',
             // Additional mappings for game functions
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
             'KeyH': 'playpause',      // H key for Hint (maps to Play/Pause button)
-=======
-            'KeyH': 'play',           // H key for Hint (maps to Play button)
->>>>>>> parent of 472bfe1 (refactor: standardize TV remote event names and add exit functionality)
             'KeyU': 'skip_backward',  // U key for Undo (maps to Skip Backward button)  
             'KeyM': 'menu'            // M key for Menu (maps to Menu button)
-<<<<<<< HEAD
-=======
-            'KeyH': 'play',    // H key for Hint (maps to Play button)
-            'KeyU': 'back',    // U key for Undo (maps to Back button)  
-            'KeyM': 'menu'     // M key for Menu (maps to Menu button)
->>>>>>> main
-=======
->>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
         };
         return keyMap[key];
     }
@@ -192,21 +176,12 @@ class TVRemoteHandler {
                 this.handleMenu();
                 break;
             case 'play':
+            case 'playpause':
                 this.handlePlay();
                 break;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
             case 'skip_backward':
                 this.handleSkipBackward();
                 break;
-=======
->>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
-=======
->>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
         }
     }
 
@@ -503,12 +478,6 @@ class TVRemoteHandler {
     }
 
     /**
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
      * Handle skip backward button press (used for Undo function)
      */
     handleSkipBackward() {
@@ -520,10 +489,6 @@ class TVRemoteHandler {
     }
 
     /**
-=======
->>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
-=======
->>>>>>> parent of 58ad6eb (Implement Spider Solitaire support and enhance UI for game type selection)
      * Handle long select press
      */
     handleLongSelect() {
