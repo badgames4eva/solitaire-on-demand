@@ -246,12 +246,12 @@ body.tv-remote-mode .control-btn.focused::before {
 
 .foundation-pile[data-suit="clubs"]::before {
     content: "♣";
-    color: #333; /* Black for clubs */
+    color: #000000; /* Black for clubs */
 }
 
 .foundation-pile[data-suit="spades"]::before {
     content: "♠";
-    color: #333; /* Black for spades */
+    color: #000000; /* Black for spades */
 }
 
 /* Common styling for all foundation pile suit indicators */
@@ -289,6 +289,18 @@ body.tv-remote-mode .control-btn.focused::before {
     transition: all 0.3s ease;
 }
 
+/* Stock pile with custom card back image support */
+.stock-pile {
+    /* Apply same custom card back image system as face-down cards */
+    background-image: var(--card-back-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    /* Keep the gradient as fallback */
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
 /* Focus states for TV remote navigation */
 .stock-pile.focused,
 .waste-pile.focused {
@@ -304,6 +316,15 @@ body.tv-remote-mode .control-btn.focused::before {
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 2rem;
+    color: rgba(255, 255, 255, 0.3);
+    
+    /* Hide the Unicode symbol when custom image is used */
+    display: var(--show-card-symbol, block);
+}
+
+/* Stock pile with custom image - hide Unicode symbol */
+.stock-pile.custom-image::before {
+    display: none;
 }
 
 /* ========================================

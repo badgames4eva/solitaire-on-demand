@@ -984,8 +984,16 @@ class UIManager {
         // Show stock indicator if cards remain
         if (this.gameState.stock.length > 0) {
             stockElement.classList.add('has-cards');
+            
+            // Apply custom card back image if active
+            if (Card.getCardBackPattern() === 'custom-image') {
+                stockElement.classList.add('custom-image');
+            } else {
+                stockElement.classList.remove('custom-image');
+            }
         } else {
             stockElement.classList.remove('has-cards');
+            stockElement.classList.remove('custom-image');
         }
     }
 
@@ -1438,12 +1446,117 @@ class UIManager {
         this.saveGameStats(stats);
         
         // Show modal
-        document.getElementById('game-over-modal').classList.add('active');
+        const modal = document.getElementById('game-over-modal');
+        modal.classList.add('active');
         
-        // Focus first button in modal
+        // Setup modal button handlers with auto-hide
+        this.setupModalHandlers();
+        
+        // Focus first button in modal for TV remote navigation
         setTimeout(() => {
             this.tvRemote.refresh();
+            const firstButton = modal.querySelector('.modal-btn.focusable');
+            if (firstButton) {
+                this.tvRemote.focusElement(firstButton);
+            }
         }, 100);
+    }
+
+    /**
+     * Setup modal button handlers with keyboard navigation and auto-hide
+     */
+    setupModalHandlers() {
+        const modal = document.getElementById('game-over-modal');
+        const modalButtons = modal.querySelectorAll('.modal-btn');
+        
+        // Remove any existing event listeners to prevent duplicates
+        modalButtons.forEach(button => {
+            // Clone the button to remove all event listeners
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+        });
+        
+        // Get the updated button references after cloning
+        const updatedButtons = modal.querySelectorAll('.modal-btn');
+        
+        // Add click handlers with auto-hide functionality
+        updatedButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                const action = button.dataset.action;
+                
+                // Hide modal immediately
+                modal.classList.remove('active');
+                
+                // Handle the action
+                this.handleAction(action, button);
+                
+                // Refresh TV remote navigation for the new screen
+                setTimeout(() => {
+                    this.tvRemote.refresh();
+                }, 100);
+            });
+            
+            // Add keyboard navigation support
+            button.addEventListener('keydown', (event) => {
+                switch (event.key) {
+                    case 'Enter':
+                    case ' ':
+                        event.preventDefault();
+                        button.click();
+                        break;
+                    case 'Escape':
+                        event.preventDefault();
+                        modal.classList.remove('active');
+                        this.tvRemote.refresh();
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        // Navigate between modal buttons
+                        const buttons = Array.from(updatedButtons);
+                        const currentIndex = buttons.indexOf(button);
+                        let nextIndex;
+                        
+                        if (event.key === 'ArrowLeft') {
+                            nextIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+                        } else {
+                            nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+                        }
+                        
+                        buttons[nextIndex].focus();
+                        this.tvRemote.focusElement(buttons[nextIndex]);
+                        break;
+                }
+            });
+        });
+        
+        // Setup TV remote navigation within modal
+        const handleModalNavigation = (event) => {
+            if (!modal.classList.contains('active')) return;
+            
+            const buttons = Array.from(modal.querySelectorAll('.modal-btn'));
+            const currentButton = document.activeElement;
+            const currentIndex = buttons.indexOf(currentButton);
+            
+            switch (event.detail?.source) {
+                case 'remote':
+                    // Handle TV remote navigation
+                    event.preventDefault();
+                    break;
+            }
+        };
+        
+        // Add TV remote event listeners for modal
+        document.addEventListener('tvleft', handleModalNavigation);
+        document.addEventListener('tvright', handleModalNavigation);
+        document.addEventListener('tvselect', handleModalNavigation);
+        document.addEventListener('tvback', (event) => {
+            if (modal.classList.contains('active')) {
+                event.preventDefault();
+                modal.classList.remove('active');
+                this.tvRemote.refresh();
+            }
+        });
     }
 
     /**
