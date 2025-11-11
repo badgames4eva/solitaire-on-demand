@@ -627,6 +627,175 @@ body.tv-remote-mode .control-btn.focused::before {
 }
 
 /* Responsive Design */
+
+/* Large screens (1440p and above) - Extra large cards */
+@media (min-width: 2560px) {
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 140px;
+        height: 192px;
+    }
+    
+    .game-board {
+        gap: 3rem;
+        max-width: 2000px;
+    }
+    
+    .tableau-area {
+        gap: 1rem;
+    }
+    
+    .card-center {
+        font-size: 2.5rem;
+    }
+    
+    .card-rank {
+        font-size: 1.8rem;
+    }
+    
+    .card-suit {
+        font-size: 2.4rem;
+    }
+    
+    .foundation-pile::before,
+    .stock-pile::before {
+        font-size: 3.5rem;
+    }
+}
+
+/* 1080p TV screens - Large cards for better visibility */
+@media (min-width: 1920px) and (max-width: 2559px) {
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 120px;
+        height: 165px;
+    }
+    
+    .game-board {
+        gap: 2.5rem;
+        max-width: 1600px;
+        height: calc(100vh - 140px);
+    }
+    
+    .tableau-area {
+        gap: 0.8rem;
+    }
+    
+    .card-center {
+        font-size: 2.2rem;
+    }
+    
+    .card-rank {
+        font-size: 1.5rem;
+    }
+    
+    .card-suit {
+        font-size: 2rem;
+    }
+    
+    .foundation-pile::before,
+    .stock-pile::before {
+        font-size: 3rem;
+    }
+    
+    /* Larger font sizes for game info on TV */
+    .game-info {
+        font-size: 1.4rem;
+    }
+    
+    .control-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 1.2rem;
+    }
+    
+    #main-menu h1 {
+        font-size: 4rem;
+    }
+    
+    .menu-btn {
+        font-size: 1.5rem;
+        padding: 1.5rem 3rem;
+    }
+}
+
+/* Standard 1080p and similar - Medium-large cards */
+@media (min-width: 1366px) and (max-width: 1919px) {
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 100px;
+        height: 138px;
+    }
+    
+    .game-board {
+        gap: 2rem;
+        max-width: 1400px;
+    }
+    
+    .tableau-area {
+        gap: 0.7rem;
+    }
+    
+    .card-center {
+        font-size: 1.8rem;
+    }
+    
+    .card-rank {
+        font-size: 1.2rem;
+    }
+    
+    .card-suit {
+        font-size: 1.6rem;
+    }
+    
+    .foundation-pile::before,
+    .stock-pile::before {
+        font-size: 2.5rem;
+    }
+    
+    .game-info {
+        font-size: 1.2rem;
+    }
+    
+    .control-btn {
+        padding: 0.7rem 1.3rem;
+        font-size: 1.1rem;
+    }
+}
+
+/* Tablet and small laptop screens */
+@media (min-width: 1025px) and (max-width: 1365px) {
+    .foundation-pile,
+    .stock-pile,
+    .waste-pile,
+    .tableau-column,
+    .card {
+        width: 85px;
+        height: 117px;
+    }
+    
+    .game-board {
+        gap: 1.5rem;
+    }
+    
+    .tableau-area {
+        gap: 0.6rem;
+    }
+    
+    .card-center {
+        font-size: 1.6rem;
+    }
+}
+
+/* Standard tablet and small laptop */
 @media (max-width: 1024px) {
     .game-board {
         gap: 1rem;
@@ -646,6 +815,7 @@ body.tv-remote-mode .control-btn.focused::before {
     }
 }
 
+/* Mobile and small tablet */
 @media (max-width: 768px) {
     .game-header {
         flex-direction: column;
@@ -668,6 +838,63 @@ body.tv-remote-mode .control-btn.focused::before {
     
     .tableau-area {
         gap: 0.3rem;
+    }
+    
+    .card-center {
+        font-size: 1rem;
+    }
+}
+
+/* TV-specific optimizations */
+@media (min-width: 1920px) {
+    /* Ensure better contrast for TV viewing */
+    .card.face-up {
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+        border: 2px solid #ccc;
+    }
+    
+    .card.selected {
+        transform: translateY(-15px);
+        box-shadow: 0 6px 12px rgba(255, 221, 68, 0.6);
+        border-color: #ffdd44;
+        border-width: 3px;
+    }
+    
+    /* Better focus indicators for TV remote */
+    .keyboard-focus {
+        box-shadow: 0 0 0 4px #00bfff !important;
+        outline: 3px solid #00bfff;
+        outline-offset: 3px;
+    }
+    
+    .keyboard-focus.card {
+        transform: translateY(-5px);
+    }
+    
+    /* Enhanced button visibility */
+    .control-btn::after {
+        font-size: 1.3rem;
+    }
+    
+    /* Better modal sizing for TV */
+    .modal-content {
+        min-width: 500px;
+        padding: 3rem;
+    }
+    
+    .modal-content h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal-btn {
+        padding: 1rem 2rem;
+        font-size: 1.3rem;
+    }
+    
+    .game-over-stats p {
+        font-size: 1.4rem;
+        margin: 1rem 0;
     }
 }
 
