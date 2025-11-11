@@ -86,9 +86,9 @@ function setupTVRemoteHandlers() {
         }
     });
     
-    // Handle Back button press (for Undo functionality)
-    document.addEventListener('tvback', (event) => {
-        console.log('TV Back button pressed');
+    // Handle Skip Backward button press (for Undo functionality)
+    document.addEventListener('tvskipbackward', (event) => {
+        console.log('TV Skip Backward button pressed (Undo)');
         
         if (solitaireGame) {
             const currentScreen = document.querySelector('.screen.active');
@@ -102,6 +102,23 @@ function setupTVRemoteHandlers() {
                     // If undo not available, go back to menu
                     solitaireGame.uiManager.showScreen('main-menu');
                 }
+            } else {
+                // In other screens - go back to main menu
+                solitaireGame.uiManager.showScreen('main-menu');
+            }
+        }
+    });
+
+    // Handle Back button press (navigation back)
+    document.addEventListener('tvback', (event) => {
+        console.log('TV Back button pressed');
+        
+        if (solitaireGame) {
+            const currentScreen = document.querySelector('.screen.active');
+            
+            if (currentScreen && currentScreen.id === 'game-screen') {
+                // In game screen - go back to menu
+                solitaireGame.uiManager.showScreen('main-menu');
             } else {
                 // In other screens - go back to main menu
                 solitaireGame.uiManager.showScreen('main-menu');

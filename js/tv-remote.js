@@ -111,9 +111,9 @@ class TVRemoteHandler {
             'Backspace': 'back',
             'Tab': 'menu',
             // Additional mappings for game functions
-            'KeyH': 'play',    // H key for Hint (maps to Play button)
-            'KeyU': 'back',    // U key for Undo (maps to Back button)  
-            'KeyM': 'menu'     // M key for Menu (maps to Menu button)
+            'KeyH': 'play',           // H key for Hint (maps to Play button)
+            'KeyU': 'skip_backward',  // U key for Undo (maps to Skip Backward button)  
+            'KeyM': 'menu'            // M key for Menu (maps to Menu button)
         };
         return keyMap[key];
     }
@@ -177,6 +177,9 @@ class TVRemoteHandler {
                 break;
             case 'play':
                 this.handlePlay();
+                break;
+            case 'skip_backward':
+                this.handleSkipBackward();
                 break;
         }
     }
@@ -471,6 +474,17 @@ class TVRemoteHandler {
             detail: { source: 'remote' }
         });
         document.dispatchEvent(playEvent);
+    }
+
+    /**
+     * Handle skip backward button press (used for Undo function)
+     */
+    handleSkipBackward() {
+        // Emit custom skip backward event for undo functionality
+        const skipBackwardEvent = new CustomEvent('tvskipbackward', {
+            detail: { source: 'remote' }
+        });
+        document.dispatchEvent(skipBackwardEvent);
     }
 
     /**

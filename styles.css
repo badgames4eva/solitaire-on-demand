@@ -165,7 +165,7 @@ body.tv-remote-mode #hint-btn::after {
 }
 
 body.tv-remote-mode #undo-btn::after {
-    content: "↩️"; /* Return/undo arrow icon */
+    content: "⏪"; /* Rewind/skip backward icon for undo */
 }
 
 body.tv-remote-mode #menu-btn::after {
