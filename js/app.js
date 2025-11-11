@@ -70,7 +70,7 @@ function setupTVRemoteHandlers() {
     });
     
     // Handle Play button press (for Hint functionality)
-    document.addEventListener('tvplay', (event) => {
+    document.addEventListener('playpause', (event) => {
         console.log('TV Play button pressed (Hint)');
         
         if (solitaireGame) {
@@ -87,7 +87,7 @@ function setupTVRemoteHandlers() {
     });
     
     // Handle Skip Backward button press (for Undo functionality)
-    document.addEventListener('tvskipbackward', (event) => {
+    document.addEventListener('skip_backward', (event) => {
         console.log('TV Skip Backward button pressed (Undo)');
         
         if (solitaireGame) {
@@ -110,7 +110,7 @@ function setupTVRemoteHandlers() {
     });
 
     // Handle Back button press (navigation back)
-    document.addEventListener('tvback', (event) => {
+    document.addEventListener('back', (event) => {
         console.log('TV Back button pressed');
         
         if (solitaireGame) {
@@ -119,8 +119,17 @@ function setupTVRemoteHandlers() {
             if (currentScreen && currentScreen.id === 'game-screen') {
                 // In game screen - go back to menu
                 solitaireGame.uiManager.showScreen('main-menu');
+            } else if (currentScreen && currentScreen.id === 'main-menu') {
+                // In main menu - exit the app (TV behavior)
+                console.log('Exiting app via TV back button');
+                try {
+                    window.close();
+                } catch (error) {
+                    console.warn('Failed to close window:', error);
+                    // Fallback: could show exit confirmation or just log
+                }
             } else {
-                // In other screens - go back to main menu
+                // In other screens (stats, settings) - go back to main menu
                 solitaireGame.uiManager.showScreen('main-menu');
             }
         }
