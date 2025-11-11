@@ -54,6 +54,7 @@ body {
 /* Main menu screen container */
 #main-menu {
     text-align: center;
+    position: relative; /* Allow positioning of version display */
 }
 
 /* Game title with shadow effect */
@@ -68,6 +69,18 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem; /* Space between buttons */
+}
+
+/* Version display in bottom right corner */
+.version-display {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: monospace;
+    user-select: none;
+    pointer-events: none;
 }
 
 /* Individual menu button styling */
@@ -165,11 +178,14 @@ body.tv-remote-mode #hint-btn::after {
 }
 
 body.tv-remote-mode #undo-btn::after {
-<<<<<<< HEAD
-    content: "⏪"; /* Rewind icon for undo */
-=======
     content: "⏪"; /* Rewind/skip backward icon for undo */
->>>>>>> parent of 9620940 (Merge branch 'main' into Klondike)
+}
+
+body.tv-remote-mode #menu-btn::after {
+    content: "☰"; /* Menu hamburger icon */
+}
+body.tv-remote-mode #menu-btn::after {
+    content: "☰"; /* Menu hamburger icon */
 }
 
 body.tv-remote-mode #menu-btn::after {

@@ -15,6 +15,9 @@ function initializeApp() {
     console.log('Initializing Solitaire On Demand...');
     
     try {
+        // Load and display version from manifest
+        loadVersionFromManifest();
+        
         // Create the main game instance which coordinates all other systems
         solitaireGame = new SolitaireGame();
         
@@ -504,6 +507,41 @@ window.debugSolitaire = {
     getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),
     getNavState: () => solitaireGame?.uiManager?.keyboardNavigation
 };
+
+/**
+ * Load version from manifest.toml and display it
+ */
+function loadVersionFromManifest() {
+    fetch('./manifest.toml')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(tomlText => {
+            // Parse TOML to extract version
+            const versionMatch = tomlText.match(/version\s*=\s*"([^"]+)"/);
+            if (versionMatch && versionMatch[1]) {
+                const version = versionMatch[1];
+                const versionDisplay = document.getElementById('version-display');
+                if (versionDisplay) {
+                    versionDisplay.textContent = `v${version}`;
+                }
+                console.log(`Version loaded from manifest: ${version}`);
+            } else {
+                console.warn('Could not parse version from manifest.toml');
+            }
+        })
+        .catch(error => {
+            console.warn('Failed to load version from manifest.toml:', error);
+            // Fallback - try to get version from package.json or use default
+            const versionDisplay = document.getElementById('version-display');
+            if (versionDisplay) {
+                versionDisplay.textContent = 'v1.0.0'; // Fallback version
+            }
+        });
+}
 
 /**
  * Setup custom card back image
