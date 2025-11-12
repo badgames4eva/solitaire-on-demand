@@ -132,7 +132,7 @@ function setupTVRemoteHandlers() {
             // Back button - Enhanced navigation
             case 'GoBack':
             case 'back':
-            case 'back':
+            case 'Backspace':
             case 'Escape': // Fallback for back button
                 event.preventDefault();
                 console.log('Back button pressed');

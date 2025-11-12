@@ -12,9 +12,8 @@ class TVRemoteHandler {
         this.focusedElement = null;
         this.focusableElements = [];
         this.isEnabled = true;
-        this.longPressThreshold = 500; // ms
-        this.longPressTimer = null;
         this.currentKeyDown = null;
+        this.currentKeyCodeDown = null;
         this.keyDownStartTime = null;
         
         this.init();
@@ -142,21 +141,11 @@ class TVRemoteHandler {
     /**
      * Handle key press events
      */
-    handleKeyPress(eventType) {
-        // Handle long press detection
-        if (this.currentKeyDown === eventType) {
-            // Continuing to hold the same key
-            return;
-        }
-
+    handleKeyPress(eventType,keyCode) {
         // New key press
         this.currentKeyDown = eventType;
+        this.currentKeyCodeDown = keyCode;
         this.keyDownStartTime = Date.now();
-
-        // Set up long press timer
-        this.longPressTimer = setTimeout(() => {
-            this.handleLongPress(eventType);
-        }, this.longPressThreshold);
 
         // Handle immediate actions for navigation
         switch (eventType) {
@@ -179,9 +168,6 @@ class TVRemoteHandler {
             case 'GoBack':
                 this.handleBack();
                 break;
-            case 'menu':
-                this.handleMenu();
-                break;
             case 'MediaPlayPause':
             case 'playpause':
                 this.handlePlay();
@@ -191,51 +177,26 @@ class TVRemoteHandler {
                 this.handleSkipBackward();
                 break;
         }
+        // Handle immediate actions for navigation
+        switch (keyCode) {            
+            case '27':
+                this.handleBack();
+                break;
+        }
     }
 
     /**
      * Handle key release events
      */
     handleKeyRelease(eventType) {
-        if (this.currentKeyDown === eventType) {
-            // Clear long press timer
-            if (this.longPressTimer) {
-                clearTimeout(this.longPressTimer);
-                this.longPressTimer = null;
-            }
-
-            // Check if it was a short press
-            const pressDuration = Date.now() - this.keyDownStartTime;
-            if (pressDuration < this.longPressThreshold) {
-                // Handle short press actions if needed
-            }
-
+        if (this.currentKeyDown === eventType) {            
             this.currentKeyDown = null;
+            this.currentKeyCodeDown = null;
             this.keyDownStartTime = null;
         }
     }
 
-    /**
-     * Handle long press events
-     */
-    handleLongPress(eventType) {
-        console.log(`Long press detected: ${eventType}`);
-        
-        switch (eventType) {
-            case 'select':
-                // Long press select could show context menu or additional options
-                this.handleLongSelect();
-                break;
-            case 'up':
-            case 'down':
-            case 'left':
-            case 'right':
-                // Long press navigation could enable rapid movement
-                this.handleRapidNavigation(eventType);
-                break;
-        }
-    }
-
+    
     /**
      * Update the list of focusable elements
      */
@@ -451,75 +412,7 @@ class TVRemoteHandler {
             this.focusedElement.click();
         }
     }
-
-    /**
-     * Handle back button press
-     */
-    handleBack() {
-        // Emit custom back event that the app can listen to
-        const backEvent = new CustomEvent('tvback', {
-            detail: { source: 'remote' }
-        });
-        document.dispatchEvent(backEvent);
-    }
-
-    /**
-     * Handle menu button press
-     */
-    handleMenu() {
-        // Emit custom menu event
-        const menuEvent = new CustomEvent('tvmenu', {
-            detail: { source: 'remote' }
-        });
-        document.dispatchEvent(menuEvent);
-    }
-
-    /**
-     * Handle play button press (used for Hint function)
-     */
-    handlePlay() {
-        // Emit custom play event for hint functionality
-        const playEvent = new CustomEvent('tvplay', {
-            detail: { source: 'remote' }
-        });
-        document.dispatchEvent(playEvent);
-    }
-
-    /**
-     * Handle skip backward button press (used for Undo function)
-     */
-    handleSkipBackward() {
-        // Emit custom skip backward event for undo functionality
-        const skipBackwardEvent = new CustomEvent('tvskipbackward', {
-            detail: { source: 'remote' }
-        });
-        document.dispatchEvent(skipBackwardEvent);
-    }
-
-    /**
-     * Handle long select press
-     */
-    handleLongSelect() {
-        if (this.focusedElement) {
-            // Emit custom long select event
-            const longSelectEvent = new CustomEvent('tvlongselect', {
-                detail: { 
-                    element: this.focusedElement,
-                    source: 'remote' 
-                }
-            });
-            this.focusedElement.dispatchEvent(longSelectEvent);
-        }
-    }
-
-    /**
-     * Handle rapid navigation during long press
-     */
-    handleRapidNavigation(direction) {
-        // Implement rapid navigation if needed
-        console.log(`Rapid navigation: ${direction}`);
-    }
-
+    
     /**
      * Enable/disable the remote handler
      */
@@ -637,9 +530,6 @@ class TVRemoteHandler {
      * Cleanup resources
      */
     destroy() {
-        if (this.longPressTimer) {
-            clearTimeout(this.longPressTimer);
-        }
 
         if (this.tvEventHandler) {
             // Clean up TV event handler if available

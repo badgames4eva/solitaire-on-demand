@@ -66,7 +66,7 @@ class UIManager {
         // Keyboard event handler with Fire TV back button support
         document.addEventListener('keydown', (event) => {
             // Handle Fire TV remote back button (keyCode 27)
-            if (event.keyCode === 27 || event.key === 'Escape') {
+            if (event.keyCode === 27) {
                 console.log('Fire TV Back button detected (keyCode: 27)');
                 event.preventDefault();
                 this.handleBackButton();
@@ -81,10 +81,6 @@ class UIManager {
             this.handleBackButton();
         });
 
-        // TV remote menu button handler
-        document.addEventListener('tvmenu', (event) => {
-            this.handleMenuButton();
-        });
 
         // Card interaction handlers
         document.addEventListener('click', (event) => {
@@ -1843,11 +1839,7 @@ class UIManager {
                         event.preventDefault();
                         button.click();
                         break;
-                    case 'Escape':
-                        event.preventDefault();
-                        modal.classList.remove('active');
-                        this.tvRemote.refresh();
-                        break;
+                   
                     case 'ArrowLeft':
                     case 'ArrowRight':
                         event.preventDefault();
