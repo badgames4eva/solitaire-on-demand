@@ -63,8 +63,16 @@ class UIManager {
             }
         });
 
-        // Keyboard event handler
+        // Keyboard event handler with Fire TV back button support
         document.addEventListener('keydown', (event) => {
+            // Handle Fire TV remote back button (keyCode 27)
+            if (event.keyCode === 27 || event.key === 'Escape') {
+                console.log('Fire TV Back button detected (keyCode: 27)');
+                event.preventDefault();
+                this.handleBackButton();
+                return;
+            }
+            
             this.handleKeyboard(event);
         });
 
@@ -767,13 +775,14 @@ class UIManager {
         modal.addEventListener('keydown', handleModalKeydown, true);
         
         // Also add to document as backup, but with lower priority
-        document.addEventListener('keydown', (event) => {
+        const documentKeydownHandler = (event) => {
             if (modal.classList.contains('active')) {
                 event.stopPropagation();
                 event.preventDefault();
                 handleModalKeydown(event);
             }
-        }, true);
+        };
+        document.addEventListener('keydown', documentKeydownHandler, true);
         
         // Handle TV remote back button in modal (dismiss modal - stay in app)
         const handleModalBack = (event) => {
@@ -797,7 +806,7 @@ class UIManager {
         
         // Store cleanup function on modal for later removal
         modal._cleanup = () => {
-            document.removeEventListener('keydown', handleModalKeydown, true);
+            document.removeEventListener('keydown', documentKeydownHandler, true);
             document.removeEventListener('tvback', handleModalBack, true);
         };
         
@@ -863,26 +872,79 @@ class UIManager {
             console.error('Error saving state before exit:', error);
         }
         
-        // For Fire TV apps, we can attempt different exit strategies
-        if (window.close) {
-            window.close(); // Try to close the window
-        } else if (window.history && window.history.length > 1) {
-            window.history.back(); // Try to go back in browser history
-        } else {
-            // Fallback: Navigate to a blank page or show exit message
-            document.body.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; 
-                            background: #2d5a27; color: white; font-family: Arial, sans-serif; text-align: center;">
-                    <div>
-                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">Thank You!</h1>
-                        <p style="font-size: 1.2rem;">Thanks for playing Solitaire On Demand</p>
-                        <p style="font-size: 1rem; margin-top: 2rem; opacity: 0.8;">
-                            You can now use your remote to navigate to another app
-                        </p>
-                    </div>
-                </div>
-            `;
+        // For Fire TV apps, attempt different exit strategies
+        console.log('Attempting to close application window...');
+        
+        // Method 1: Direct window.close()
+        try {
+            if (typeof window.close === 'function') {
+                console.log('Calling window.close()');
+                window.close();
+                
+                // Give it time to work, then try alternatives
+                setTimeout(() => {
+                    console.log('window.close() may not have worked, trying alternatives...');
+                    this.attemptAlternativeExit();
+                }, 1000);
+            } else {
+                console.log('window.close() not available, trying alternatives...');
+                this.attemptAlternativeExit();
+            }
+        } catch (error) {
+            console.error('Error calling window.close():', error);
+            this.attemptAlternativeExit();
         }
+    }
+    
+    /**
+     * Attempt alternative exit methods for Fire TV
+     */
+    attemptAlternativeExit() {
+        // Method 2: Fire TV specific exit event
+        try {
+            if (typeof AndroidInterface !== 'undefined' && AndroidInterface.exitApp) {
+                console.log('Calling AndroidInterface.exitApp()');
+                AndroidInterface.exitApp();
+                return;
+            }
+        } catch (error) {
+            console.log('AndroidInterface not available:', error);
+        }
+        
+        // Method 3: History back (if available)
+        try {
+            if (window.history && window.history.length > 1) {
+                console.log('Calling window.history.back()');
+                window.history.back();
+                return;
+            }
+        } catch (error) {
+            console.log('History back not available:', error);
+        }
+        
+        // Method 4: Navigate to launcher (Fire TV specific)
+        try {
+            console.log('Attempting to navigate to Fire TV launcher');
+            window.location.href = 'fire://tv/home';
+            return;
+        } catch (error) {
+            console.log('Fire TV launcher navigation failed:', error);
+        }
+        
+        // Fallback: Show exit confirmation screen
+        console.log('All exit methods failed, showing exit confirmation screen');
+        document.body.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; 
+                        background: #2d5a27; color: white; font-family: Arial, sans-serif; text-align: center;">
+                <div>
+                    <h1 style="font-size: 3rem; margin-bottom: 1rem;">Thank You!</h1>
+                    <p style="font-size: 1.2rem;">Thanks for playing Solitaire On Demand</p>
+                    <p style="font-size: 1rem; margin-top: 2rem; opacity: 0.8;">
+                        Press the Home button on your remote to return to Fire TV
+                    </p>
+                </div>
+            </div>
+        `;
     }
 
     /**
