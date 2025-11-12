@@ -1,6 +1,11 @@
 /**
  * TV Remote Handler for Fire TV navigation
  * Handles D-pad navigation and remote control events
+ * 
+ * USAGE ANALYSIS:
+ * ✅ USED: calculateDistance, focusElement, refresh, destroy, isFireTV
+ * ❌ MOSTLY UNUSED: Built-in navigation (overridden), Fire TV handler, most internal methods
+ * ⚠️  PARTIALLY USED: Custom events (tvback, tvmenu, tvlongselect used; tvplay, tvskipbackward not listened to)
  */
 class TVRemoteHandler {
     constructor() {
@@ -171,6 +176,7 @@ class TVRemoteHandler {
                 this.handleSelect();
                 break;
             case 'back':
+            case 'GoBack':
                 this.handleBack();
                 break;
             case 'menu':
