@@ -184,11 +184,11 @@ function setupDebugPanel() {
         debugClear.addEventListener('click', clearDebugLog);
     }
     
-    // Show debug panel by default for testing
+    // Hide debug panel by default - can be toggled with F12
     const debugPanel = document.getElementById('debug-panel');
     if (debugPanel) {
-        debugPanel.classList.add('active');
-        logInfo('Debug panel initialized. Press F12 to toggle.');
+        debugPanel.classList.remove('active');
+        console.log('Debug panel initialized (hidden). Press F12 to toggle.');
     }
 }
 
