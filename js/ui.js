@@ -88,19 +88,6 @@ class UIManager {
                 return;
             }
             
-            // Handle Escape key differently based on current screen for keyboard users
-            if (event.key === 'Escape' && event.keyCode !== 27) {
-                if (this.currentScreen === 'game-screen') {
-                    // In game screen, let handleKeyboard handle it (for clearing selection)
-                    this.handleKeyboard(event);
-                } else {
-                    // In other screens, treat as back button
-                    console.log('Escape key pressed - treating as back button');
-                    event.preventDefault();
-                    this.handleBackButton();
-                }
-                return;
-            }
             
             this.handleKeyboard(event);
         });
@@ -650,33 +637,50 @@ class UIManager {
     }
 
     /**
-     * Handle TV remote back button with history tracking and exit confirmation
+     * Handle TV remote back button with history tracking
+     * Back button from game screen goes to main menu, exit dialog only via exit button
      */
     handleBackButton() {
-        console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
-        
-        // If there's history, go back to the previous screen
-        if (this.screenHistory.length > 0) {
-            const previousScreen = this.screenHistory.pop();
-            console.log('Going back to:', previousScreen);
-            this.showScreen(previousScreen, false); // Don't add to history when going back
-            this.exitWarningShown = false; // Reset exit warning
-            return;
+        try {
+            console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
+            
+            // If there's history, go back to the previous screen
+            if (this.screenHistory.length > 0) {
+                const previousScreen = this.screenHistory.pop();
+                console.log('Going back to:', previousScreen);
+                this.showScreen(previousScreen, false); // Don't add to history when going back
+                this.exitWarningShown = false; // Reset exit warning
+                return;
+            }
+            
+            // For any screen without history (including game-screen), go to main menu
+            // Exit dialog is ONLY shown via the dedicated Exit button, not back navigation
+            else if (this.currentScreen !== 'main-menu') {
+                console.log('No history, navigating to main menu');
+                this.showScreen('main-menu');
+                return;
+            }
+            else if (this.currentScreen === 'main-menu') {
+                console.log('Already on main menu, showing exit dialog');
+                this.handleAppExit();
+                return;
+            }
+        } catch (error) {
+            console.error('Error in handleBackButton:', error);
+            // Fallback: ensure we're on main menu and reset state
+            try {
+                if (this.currentScreen !== 'main-menu') {
+                    this.showScreen('main-menu');
+                }
+                this.exitWarningShown = false;
+            } catch (fallbackError) {
+                console.error('Error in handleBackButton fallback:', fallbackError);
+            }
         }
-        
-        // If we're at the main menu with no history, handle exit confirmation
-        if (this.currentScreen === 'main-menu') {
-            this.handleAppExit();
-            return;
-        }
-        
-        // For any other screen without history, go to main menu
-        this.showScreen('main-menu');
     }
-
     /**
      * Handle application exit with Fire TV best practices
-     * Requires explicit user choice - cannot exit by pressing back multiple times
+     * Only called by dedicated Exit button, not by back navigation
      */
     handleAppExit() {
         // Always show exit confirmation - never exit automatically
@@ -688,6 +692,15 @@ class UIManager {
      * Show exit confirmation popup following Fire TV guidelines
      */
     showExitConfirmation() {
+        // Prevent multiple modals - remove existing if any
+        const existingModal = document.getElementById('exit-confirmation-modal');
+        if (existingModal) {
+            if (existingModal._cleanup) {
+                existingModal._cleanup();
+            }
+            existingModal.remove();
+        }
+        
         // Create exit confirmation modal
         const modal = document.createElement('div');
         modal.id = 'exit-confirmation-modal';
@@ -1217,6 +1230,9 @@ class UIManager {
                 break;
             case 'new-game-same':
                 this.startNewGame(this.gameState.difficulty);
+                break;
+            case 'exit':
+                this.handleAppExit();
                 break;
             default:
                 console.log('Unknown action:', action);

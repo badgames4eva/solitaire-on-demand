@@ -129,15 +129,13 @@ function setupTVRemoteHandlers() {
                 }
                 break;
                 
-            // Back button - Enhanced navigation
+            // Back button handling removed - let ui.js handle all back navigation
+            // This prevents double triggering when multiple listeners process same key
             case 'GoBack':
             case 'back':
-            case 'Backspace':
-            case 'Escape': // Fallback for back button
-                event.preventDefault();
-                console.log('Back button pressed');
-                logFunctionCall('Back navigation', 'GoBack/Escape button triggered');
-                solitaireGame.uiManager.handleBackButton();
+                // Let ui.js handle back button via its own keydown listener
+                console.log('Back button event detected in app.js - delegating to ui.js');
+                logFunctionCall('Back navigation', 'GoBack button triggered (delegated to ui.js)');
                 break;
                 
             // Additional Fire TV remote mappings

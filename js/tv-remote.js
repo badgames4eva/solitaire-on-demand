@@ -166,7 +166,8 @@ class TVRemoteHandler {
                 break;
             case 'back':
             case 'GoBack':
-                this.handleBack();
+                // Let ui.js handle back button - dispatch custom event
+                document.dispatchEvent(new CustomEvent('tvback'));
                 break;
             case 'MediaPlayPause':
             case 'playpause':
@@ -180,7 +181,8 @@ class TVRemoteHandler {
         // Handle immediate actions for navigation
         switch (keyCode) {            
             case '27':
-                this.handleBack();
+                // Let ui.js handle back button - dispatch custom event
+                document.dispatchEvent(new CustomEvent('tvback'));
                 break;
         }
     }
