@@ -63,13 +63,42 @@ class UIManager {
             }
         });
 
-        // Keyboard event handler with Fire TV back button support
+        // Comprehensive Fire TV back button detection
         document.addEventListener('keydown', (event) => {
-            // Handle Fire TV remote back button (keyCode 27)
-            if (event.keyCode === 27) {
-                console.log('Fire TV Back button detected (keyCode: 27)');
+            // Comprehensive Fire TV back button detection
+            const isFireTVBack = (
+                event.keyCode === 27 ||                    // Standard Escape keyCode
+                event.key === 'GoBack' ||                  // Fire TV specific
+                event.key === 'BrowserBack' ||             // Alternative Fire TV key
+                event.code === 'Escape' ||                 // Key code
+                (event.keyCode === 8 && event.target.tagName !== 'INPUT') || // Backspace (not in input)
+                event.key === 'Back'                       // Generic back key
+            );
+            
+            if (isFireTVBack) {
+                console.log('Fire TV Back button detected:', {
+                    key: event.key,
+                    keyCode: event.keyCode,
+                    code: event.code,
+                    type: 'back'
+                });
                 event.preventDefault();
+                event.stopPropagation();
                 this.handleBackButton();
+                return;
+            }
+            
+            // Handle Escape key differently based on current screen for keyboard users
+            if (event.key === 'Escape' && event.keyCode !== 27) {
+                if (this.currentScreen === 'game-screen') {
+                    // In game screen, let handleKeyboard handle it (for clearing selection)
+                    this.handleKeyboard(event);
+                } else {
+                    // In other screens, treat as back button
+                    console.log('Escape key pressed - treating as back button');
+                    event.preventDefault();
+                    this.handleBackButton();
+                }
                 return;
             }
             
@@ -1367,6 +1396,14 @@ class UIManager {
         const columnCards = this.gameState.tableau[column];
         const clickedCard = columnCards[cardIndex];
         
+        // Handle empty tableau columns when cards are already selected
+        if (!clickedCard && this.selectedCards.length > 0) {
+            // Try to move selected cards to empty column (e.g., King to empty slot)
+            this.attemptMove('tableau', column);
+            return;
+        }
+        
+        // Handle clicking on existing cards
         if (!clickedCard || !clickedCard.faceUp) return; // Can't select face-down cards
         
         if (this.selectedCards.length === 0) {
@@ -1502,11 +1539,15 @@ class UIManager {
         );
         
         if (success) {
-            // Clear selection immediately on successful move to prevent re-selection
+            // Clear selection immediately and ensure it stays cleared
             this.clearSelection();
             
-            this.animateMove(this.selectedSource, { area: targetArea, index: targetIndex });
-            this.updateGameDisplay();
+            // Animate move and ensure selection is cleared after rendering
+            this.animateMove(this.selectedSource, { area: targetArea, index: targetIndex }, () => {
+                // Callback to ensure selection is fully cleared after animation
+                this.clearSelection();
+                this.updateGameDisplay();
+            });
             
             // Check for auto-complete
             if (this.gameState.autoCompleteAvailable && 
@@ -1520,7 +1561,7 @@ class UIManager {
                 this.handleGameWin();
             }
         } else {
-            // Only clear selection if move failed (for retry)
+            // Clear selection if move failed
             this.clearSelection();
         }
     }
@@ -1559,9 +1600,9 @@ class UIManager {
     /**
      * Animate card movement
      */
-    animateMove(from, to) {
-        // Add animation to queue
-        this.animationQueue.push({ from, to });
+    animateMove(from, to, callback = null) {
+        // Add animation to queue with callback
+        this.animationQueue.push({ from, to, callback });
         this.processAnimationQueue();
     }
 
@@ -1577,6 +1618,12 @@ class UIManager {
         // Perform animation (simplified for now)
         setTimeout(() => {
             this.renderGameBoard();
+            
+            // Execute callback if provided
+            if (animation.callback) {
+                animation.callback();
+            }
+            
             this.isAnimating = false;
             this.processAnimationQueue();
         }, 300);
