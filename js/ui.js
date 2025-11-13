@@ -9,12 +9,14 @@ class UIManager {
      * @param {GameState} gameState - The game state manager
      * @param {DifficultyManager} difficultyManager - The difficulty settings manager
      * @param {TVRemoteHandler} tvRemote - The TV remote navigation handler
+     * @param {SoundManager} soundManager - The sound effects manager
      */
-    constructor(gameState, difficultyManager, tvRemote) {
+    constructor(gameState, difficultyManager, tvRemote, soundManager) {
         // Core system references
         this.gameState = gameState;                    // Access to game logic and state
         this.difficultyManager = difficultyManager;    // Access to difficulty rules
         this.tvRemote = tvRemote;                     // Access to navigation system
+        this.soundManager = soundManager;             // Access to audio effects
         
         // UI state management
         this.currentScreen = 'main-menu';             // Currently active screen
@@ -59,7 +61,24 @@ class UIManager {
             const target = event.target;
             
             if (target.matches('[data-action]')) {
+                // Resume audio context on first user interaction
+                if (this.soundManager) {
+                    this.soundManager.resumeAudio();
+                }
+                
+                // Play menu click sound
+                if (this.soundManager) {
+                    this.soundManager.menuClick();
+                }
+                
                 this.handleAction(target.dataset.action, target);
+            }
+        });
+        
+        // Button hover sound effects
+        document.addEventListener('mouseover', (event) => {
+            if (event.target.matches('.menu-btn, .control-btn, .modal-btn') && this.soundManager) {
+                this.soundManager.buttonHover();
             }
         });
 
@@ -204,7 +223,7 @@ class UIManager {
                 break;
             
             // Actions
-            case 'enter':
+            case 'Enter':
             case ' ':
                 this.activateCurrentSelection();
                 break;
@@ -1466,6 +1485,11 @@ class UIManager {
         this.clearSelection();
         
         if (this.gameState.drawFromStock()) {
+            // Play stock draw sound
+            if (this.soundManager) {
+                this.soundManager.stockDraw();
+            }
+            
             this.renderStock();
             this.renderWaste();
             this.updateGameDisplay();
@@ -1555,6 +1579,11 @@ class UIManager {
         );
         
         if (success) {
+            // Play successful move sound
+            if (this.soundManager) {
+                this.soundManager.moveSuccess();
+            }
+            
             // Clear selection immediately and ensure it stays cleared
             this.clearSelection();
             

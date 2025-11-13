@@ -12,6 +12,7 @@ class SolitaireGame {
         this.gameState = null;          // Manages card positions, score, moves, etc.
         this.difficultyManager = null;  // Handles difficulty settings and rules
         this.tvRemote = null;          // Manages Fire TV remote navigation
+        this.soundManager = null;      // Handles audio effects and feedback
         this.uiManager = null;         // Handles all user interface interactions
         this.isInitialized = false;    // Flag to track initialization status
         
@@ -28,13 +29,15 @@ class SolitaireGame {
             this.gameState = new GameState();                    // Game logic and state
             this.difficultyManager = new DifficultyManager();    // Difficulty rules and features
             this.tvRemote = new TVRemoteHandler();              // Fire TV remote navigation
+            this.soundManager = new SoundManager();             // Audio effects and feedback
             
             // Initialize UI manager with all dependencies
             // The UI manager needs access to all other systems to function
             this.uiManager = new UIManager(
                 this.gameState,         // For game state updates and rendering
                 this.difficultyManager, // For difficulty-specific UI behavior
-                this.tvRemote          // For navigation and focus management
+                this.tvRemote,         // For navigation and focus management
+                this.soundManager      // For audio feedback
             );
             
             // Setup additional event handlers specific to the main game controller
@@ -98,7 +101,19 @@ class SolitaireGame {
         const soundEffectsCheckbox = document.getElementById('sound-effects');
         if (soundEffectsCheckbox) {
             soundEffectsCheckbox.addEventListener('change', () => {
+                // Save settings and update sound manager immediately
                 this.uiManager.saveSettings();
+                
+                // Update sound manager settings
+                if (this.soundManager) {
+                    const settings = this.uiManager.getSettings();
+                    this.soundManager.setSoundEnabled(settings.soundEffects);
+                    
+                    // Play a test sound if enabled to give immediate feedback
+                    if (settings.soundEffects) {
+                        this.soundManager.menuClick();
+                    }
+                }
             });
         }
 
