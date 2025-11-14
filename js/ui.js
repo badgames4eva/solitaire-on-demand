@@ -664,14 +664,18 @@ class UIManager {
             console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
             
             // If there's history, go back to the previous screen
-            if (this.screenHistory.length > 0) {
+            if (this.currentScreen === 'main-menu') {
+                console.log('Already on main menu, showing exit dialog');
+                this.handleAppExit();
+                return;
+            }
+            else if (this.screenHistory.length > 0) {
                 const previousScreen = this.screenHistory.pop();
                 console.log('Going back to:', previousScreen);
                 this.showScreen(previousScreen, false); // Don't add to history when going back
                 this.exitWarningShown = false; // Reset exit warning
                 return;
             }
-            
             // For any screen without history (including game-screen), go to main menu
             // Exit dialog is ONLY shown via the dedicated Exit button, not back navigation
             else if (this.currentScreen !== 'main-menu') {
@@ -679,11 +683,9 @@ class UIManager {
                 this.showScreen('main-menu');
                 return;
             }
-            else if (this.currentScreen === 'main-menu') {
-                console.log('Already on main menu, showing exit dialog');
-                this.handleAppExit();
-                return;
-            }
+            else {
+                console.log('No action taken');
+            } 
         } catch (error) {
             console.error('Error in handleBackButton:', error);
             // Fallback: ensure we're on main menu and reset state
