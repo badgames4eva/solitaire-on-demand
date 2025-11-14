@@ -534,6 +534,17 @@ window.debugSolitaire = {
     testLeft: () => solitaireGame?.uiManager?.testNavigationDirection('left'),
     testRight: () => solitaireGame?.uiManager?.testNavigationDirection('right'),
     
+    // Audio troubleshooting functions for Fire TV
+    getAudioDiagnostics: () => solitaireGame?.soundManager?.getAudioDiagnostics(),
+    forceAudioInit: () => solitaireGame?.soundManager?.forceAudioInitialization(),
+    testAudioBeep: () => solitaireGame?.soundManager?.playAudibleTest(),
+    resumeAudio: () => solitaireGame?.soundManager?.resumeAudio(),
+    
+    // Audio testing shortcuts
+    testCardSound: () => solitaireGame?.soundManager?.cardFlip(),
+    testMoveSound: () => solitaireGame?.soundManager?.moveSuccess(),
+    testMenuSound: () => solitaireGame?.soundManager?.menuClick(),
+    
     // Helper functions
     startGame: (difficulty = 'medium') => solitaireGame?.uiManager?.startNewGame(difficulty),
     getCurrentFocus: () => solitaireGame?.uiManager?.getCurrentFocusElement(),

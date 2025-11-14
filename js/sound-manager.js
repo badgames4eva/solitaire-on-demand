@@ -23,6 +23,16 @@ class SoundManager {
         // Pre-generated sound buffers for performance
         this.sounds = new Map();
         
+        // Fire TV detection and audio troubleshooting
+        this.isFireTV = this.detectFireTV();
+        this.audioInitialized = false;
+        this.audioTroubleshooting = {
+            contextCreated: false,
+            soundsGenerated: false,
+            userInteraction: false,
+            testTonePlayed: false
+        };
+        
         this.init();
     }
 
@@ -297,15 +307,73 @@ class SoundManager {
 
     /**
      * Resume audio context (required after user interaction)
+     * Enhanced for Fire TV compatibility
      */
     async resumeAudio() {
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            try {
+        if (!this.audioContext) {
+            console.warn('No audio context available');
+            return false;
+        }
+
+        try {
+            // Force audio context resume for Fire TV devices
+            if (this.audioContext.state === 'suspended' || this.audioContext.state === 'interrupted') {
+                console.log('Attempting to resume audio context. Current state:', this.audioContext.state);
                 await this.audioContext.resume();
-                console.log('Audio context resumed');
-            } catch (error) {
-                console.warn('Failed to resume audio context:', error);
+                
+                // Wait a bit and check if it actually resumed
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (this.audioContext.state === 'running') {
+                    console.log('Audio context successfully resumed');
+                    // Play a silent test tone to ensure audio output is working
+                    this.playTestTone();
+                    return true;
+                } else {
+                    console.warn('Audio context failed to resume. State:', this.audioContext.state);
+                    return false;
+                }
+            } else if (this.audioContext.state === 'running') {
+                console.log('Audio context already running');
+                return true;
+            } else {
+                console.warn('Unknown audio context state:', this.audioContext.state);
+                return false;
             }
+        } catch (error) {
+            console.error('Failed to resume audio context:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Play a silent test tone to initialize audio on TV
+     * Fire TV devices sometimes need an actual sound to activate audio output
+     */
+    playTestTone() {
+        if (!this.audioContext || this.audioContext.state !== 'running') {
+            return;
+        }
+
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            // Create a very short, very quiet tone
+            oscillator.frequency.value = 440; // A4 note
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            // Make it practically inaudible but present
+            gainNode.gain.value = 0.01;
+            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.01);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.01);
+            
+            console.log('Test tone played to initialize Fire TV audio');
+        } catch (error) {
+            console.warn('Failed to play test tone:', error);
         }
     }
 
@@ -413,6 +481,249 @@ class SoundManager {
             masterVolume: this.masterVolume,
             sfxVolume: this.sfxVolume
         };
+    }
+
+    /**
+     * Detect Fire TV device
+     */
+    detectFireTV() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        
+        // Check for Fire TV specific identifiers
+        const firetvIdentifiers = [
+            'aftt',      // Fire TV Stick
+            'aftm',      // Fire TV (set-top box)
+            'aftb',      // Fire TV (older models)
+            'afts',      // Fire TV Stick 4K
+            'aftn',      // Fire TV Edition (smart TVs)
+            'fire tv',   // General Fire TV
+            'AFTCA002',
+            'silk'       // Fire TV browser
+        ];
+        
+        const isFireTV = firetvIdentifiers.some(id => userAgent.includes(id));
+        
+        if (isFireTV) {
+            console.log('Fire TV device detected:', userAgent);
+        } else {
+            console.log('Non-Fire TV device detected');
+        }
+        
+        return isFireTV;
+    }
+
+    /**
+     * Get comprehensive audio diagnostics for troubleshooting TV audio issues
+     */
+    getAudioDiagnostics() {
+        const diagnostics = {
+            device: {
+                isFireTV: this.isFireTV,
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            },
+            audioContext: {
+                available: !!this.audioContext,
+                state: this.audioContext?.state || 'not available',
+                sampleRate: this.audioContext?.sampleRate || 'not available',
+                baseLatency: this.audioContext?.baseLatency || 'not available',
+                outputLatency: this.audioContext?.outputLatency || 'not available'
+            },
+            webAudioSupport: {
+                AudioContext: typeof AudioContext !== 'undefined',
+                webkitAudioContext: typeof webkitAudioContext !== 'undefined',
+                createOscillator: this.audioContext ? typeof this.audioContext.createOscillator === 'function' : false,
+                createGain: this.audioContext ? typeof this.audioContext.createGain === 'function' : false
+            },
+            soundManager: {
+                soundEnabled: this.soundEnabled,
+                masterVolume: this.masterVolume,
+                sfxVolume: this.sfxVolume,
+                soundsGenerated: this.sounds.size > 0,
+                audioInitialized: this.audioInitialized
+            },
+            troubleshooting: this.audioTroubleshooting,
+            recommendations: this.getAudioRecommendations()
+        };
+
+        console.log('Audio Diagnostics:', diagnostics);
+        return diagnostics;
+    }
+
+    /**
+     * Get audio troubleshooting recommendations based on current state
+     */
+    getAudioRecommendations() {
+        const recommendations = [];
+
+        if (!this.audioContext) {
+            recommendations.push("Audio context not created - Web Audio API may not be supported");
+        } else if (this.audioContext.state === 'suspended') {
+            recommendations.push("Audio context is suspended - try interacting with the game to resume audio");
+        }
+
+        if (this.isFireTV && this.audioContext?.state === 'running' && !this.audioTroubleshooting.testTonePlayed) {
+            recommendations.push("Fire TV detected but test tone not played - audio output may need initialization");
+        }
+
+        if (!this.soundEnabled) {
+            recommendations.push("Sound effects are disabled in settings - enable them in the Settings menu");
+        }
+
+        if (this.masterVolume === 0 || this.sfxVolume === 0) {
+            recommendations.push("Audio volume is set to 0 - check volume settings");
+        }
+
+        if (this.sounds.size === 0) {
+            recommendations.push("Sound effects not generated - there may be an initialization error");
+        }
+
+        if (recommendations.length === 0) {
+            recommendations.push("Audio system appears to be working correctly");
+        }
+
+        return recommendations;
+    }
+
+    /**
+     * Force audio initialization for Fire TV
+     * Call this method if audio is not working to attempt multiple recovery strategies
+     */
+    async forceAudioInitialization() {
+        console.log('Attempting to force audio initialization for Fire TV...');
+        
+        try {
+            // Strategy 1: Create new audio context if needed
+            if (!this.audioContext) {
+                console.log('Creating new audio context...');
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.audioTroubleshooting.contextCreated = true;
+            }
+
+            // Strategy 2: Force resume audio context
+            if (this.audioContext.state !== 'running') {
+                console.log('Forcing audio context resume...');
+                await this.audioContext.resume();
+                await new Promise(resolve => setTimeout(resolve, 200)); // Give it time
+            }
+
+            // Strategy 3: Recreate master gain if needed
+            if (!this.masterGain) {
+                console.log('Recreating master gain node...');
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.value = this.masterVolume;
+                this.masterGain.connect(this.audioContext.destination);
+            }
+
+            // Strategy 4: Play multiple test tones with different approaches
+            if (this.audioContext.state === 'running') {
+                console.log('Playing enhanced test sequence for Fire TV...');
+                await this.playEnhancedTestSequence();
+            }
+
+            // Strategy 5: Regenerate sounds if they're missing
+            if (this.sounds.size === 0) {
+                console.log('Regenerating sound effects...');
+                await this.generateSounds();
+                this.audioTroubleshooting.soundsGenerated = true;
+            }
+
+            this.audioInitialized = true;
+            console.log('Fire TV audio initialization completed');
+            
+            return {
+                success: true,
+                audioContextState: this.audioContext.state,
+                soundsGenerated: this.sounds.size,
+                recommendations: this.getAudioRecommendations()
+            };
+
+        } catch (error) {
+            console.error('Fire TV audio initialization failed:', error);
+            return {
+                success: false,
+                error: error.message,
+                recommendations: ['Audio initialization failed - check TV audio settings and try restarting the app']
+            };
+        }
+    }
+
+    /**
+     * Play enhanced test sequence for Fire TV audio troubleshooting
+     */
+    async playEnhancedTestSequence() {
+        if (!this.audioContext || this.audioContext.state !== 'running') {
+            return;
+        }
+
+        const testSequence = [
+            { freq: 440, duration: 0.05, volume: 0.02 },  // Very quiet A4
+            { freq: 220, duration: 0.05, volume: 0.03 },  // Quiet A3
+            { freq: 880, duration: 0.05, volume: 0.02 },  // Very quiet A5
+        ];
+
+        for (let i = 0; i < testSequence.length; i++) {
+            const test = testSequence[i];
+            
+            try {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.frequency.value = test.freq;
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                gainNode.gain.value = test.volume;
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + test.duration);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + test.duration);
+                
+                // Wait between tones
+                await new Promise(resolve => setTimeout(resolve, test.duration * 1000 + 50));
+                
+            } catch (error) {
+                console.warn(`Test tone ${i + 1} failed:`, error);
+            }
+        }
+
+        this.audioTroubleshooting.testTonePlayed = true;
+        console.log('Enhanced Fire TV test sequence completed');
+    }
+
+    /**
+     * Test audio output with audible sound for user verification
+     * This plays a clearly audible test sound to verify audio is working
+     */
+    playAudibleTest() {
+        if (!this.audioContext || this.audioContext.state !== 'running') {
+            console.warn('Cannot play audible test - audio context not running');
+            return false;
+        }
+
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            // Play a clearly audible test beep
+            oscillator.frequency.value = 800; // Higher pitch for TV speakers
+            oscillator.connect(gainNode);
+            gainNode.connect(this.masterGain);
+            
+            // Audible but not too loud
+            gainNode.gain.value = 0.3;
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.5);
+            
+            console.log('Audible test beep played');
+            return true;
+
+        } catch (error) {
+            console.error('Failed to play audible test:', error);
+            return false;
+        }
     }
 
     /**
