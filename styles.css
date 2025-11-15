@@ -544,7 +544,7 @@ body.tv-remote-mode .control-btn.focused::before {
 /* Selected Cards Display */
 .selected-cards {
     position: fixed;
-    bottom: 20px;
+    bottom: 0px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
