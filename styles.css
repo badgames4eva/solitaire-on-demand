@@ -196,7 +196,7 @@ body.tv-remote-mode #undo-btn::after {
 }
 
 body.tv-remote-mode #menu-btn::after {
-    content: "↩️"; /* Menu hamburger icon */
+    content: ""; /* menu icon */
 }
 
 /* Enhanced focus state for TV remote with SELECT instruction */
