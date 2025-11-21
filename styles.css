@@ -1022,7 +1022,7 @@ body.tv-remote-mode .control-btn.focused::before {
     border-top: 2px solid #ffdd44;
     z-index: 5000;
     font-family: 'Courier New', monospace;
-    /*display: none; /* Hidden by default */
+    display: none; /* Hidden by default */
     flex-direction: column;
 }
 
