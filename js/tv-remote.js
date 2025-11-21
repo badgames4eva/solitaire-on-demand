@@ -110,18 +110,15 @@ class TVRemoteHandler {
             'ArrowLeft': 'left',
             'ArrowRight': 'right',
             'Enter': 'select',
-            'KEYCODE_ENTER': 'select',
             'Escape': 'GoBack',
             'Space': 'select',        
             'Backspace': 'GoBack',
-            'KEYCODE_BACK': 'GoBack',
             'Tab': 'menu',
             // Additional mappings for game functions
             'KeyH': 'MediaFastForward',       // H key for Hint (maps to MediaFastForward button)
             'KeyU': 'MediaRewind',            // U key for Undo (maps to MediaRewind button)  
             'KeyM': 'menu',                   // M key for Menu (maps to Menu button)
             'KeyP': 'MediaPlayPause',          // P key for Play/Pause (stock pile)
-            'KEYCODE_MEDIA_PLAY_PAUSE': 'MediaPlayPause',          // P key for Play/Pause (stock pile)
             
         };
         return keyMap[key];
@@ -144,14 +141,15 @@ class TVRemoteHandler {
 
     /**
      * Handle key press events
+     * Supports both string event types and Android KeyEvent constants
      */
-    handleKeyPress(eventType,keyCode) {
+    handleKeyPress(eventType, keyCode) {
         // New key press
         this.currentKeyDown = eventType;
         this.currentKeyCodeDown = keyCode;
         this.keyDownStartTime = Date.now();
 
-        // Handle immediate actions for navigation
+        // Handle immediate actions for navigation (string event types)
         switch (eventType) {
             case 'up':
                 this.navigateUp();
@@ -182,7 +180,74 @@ class TVRemoteHandler {
                 this.handleSkipBackward();
                 break;
         }
-        // Handle immediate actions for navigation
+        
+        // Handle Android KeyEvent constants (numeric keyCode)
+        if (typeof keyCode === 'number') {
+            switch (keyCode) {
+                // D-Pad navigation - KEYCODE_DPAD_UP = 19, DOWN = 20, LEFT = 21, RIGHT = 22
+                case 19: // KEYCODE_DPAD_UP
+                    console.log('TV Remote: D-Pad Up (Android KeyCode 19)');
+                    this.navigateUp();
+                    break;
+                case 20: // KEYCODE_DPAD_DOWN
+                    console.log('TV Remote: D-Pad Down (Android KeyCode 20)');
+                    this.navigateDown();
+                    break;
+                case 21: // KEYCODE_DPAD_LEFT
+                    console.log('TV Remote: D-Pad Left (Android KeyCode 21)');
+                    this.navigateLeft();
+                    break;
+                case 22: // KEYCODE_DPAD_RIGHT
+                    console.log('TV Remote: D-Pad Right (Android KeyCode 22)');
+                    this.navigateRight();
+                    break;
+                    
+                // Select buttons - KEYCODE_DPAD_CENTER = 23, KEYCODE_BUTTON_A = 96
+                case 23: // KEYCODE_DPAD_CENTER
+                case 96: // KEYCODE_BUTTON_A
+                    console.log('TV Remote: Select/A button (Android KeyCode', keyCode, ')');
+                    this.handleSelect();
+                    break;
+                    
+                // Back button - KEYCODE_BACK = 4
+                case 4: // KEYCODE_BACK
+                    console.log('TV Remote: Back button (Android KeyCode 4)');
+                    document.dispatchEvent(new CustomEvent('tvback'));
+                    break;
+                    
+                // Menu button - KEYCODE_MENU = 82
+                case 82: // KEYCODE_MENU
+                    console.log('TV Remote: Menu button (Android KeyCode 82)');
+                    document.dispatchEvent(new CustomEvent('tvmenu'));
+                    break;
+                    
+                // Media control buttons
+                case 85: // KEYCODE_MEDIA_PLAY_PAUSE
+                    console.log('TV Remote: Play/Pause button (Android KeyCode 85)');
+                    this.handlePlay();
+                    break;
+                case 89: // KEYCODE_MEDIA_REWIND
+                    console.log('TV Remote: Rewind button (Android KeyCode 89)');
+                    this.handleSkipBackward();
+                    break;
+                case 90: // KEYCODE_MEDIA_FAST_FORWARD
+                    console.log('TV Remote: Fast Forward button (Android KeyCode 90)');
+                    document.dispatchEvent(new CustomEvent('tvfastforward'));
+                    break;
+                    
+                // Additional Fire TV buttons
+                case 166: // KEYCODE_CHANNEL_UP
+                    console.log('TV Remote: Channel Up button (Android KeyCode 166)');
+                    document.dispatchEvent(new CustomEvent('tvchannelup'));
+                    break;
+                case 167: // KEYCODE_CHANNEL_DOWN
+                    console.log('TV Remote: Channel Down button (Android KeyCode 167)');
+                    document.dispatchEvent(new CustomEvent('tvchanneldown'));
+                    break;
+            }
+        }
+        
+        // Handle legacy string keyCode support
         switch (keyCode) {            
             case '27':
                 // Let ui.js handle back button - dispatch custom event
@@ -417,6 +482,33 @@ class TVRemoteHandler {
             // Trigger click event on focused element
             this.focusedElement.click();
         }
+    }
+
+    /**
+     * Handle play/pause button press
+     * Dispatches custom event for game-specific handling
+     */
+    handlePlay() {
+        console.log('TV Remote: Play/Pause button handled');
+        document.dispatchEvent(new CustomEvent('tvplay'));
+    }
+
+    /**
+     * Handle skip backward/rewind button press
+     * Dispatches custom event for game-specific handling
+     */
+    handleSkipBackward() {
+        console.log('TV Remote: Skip Backward/Rewind button handled');
+        document.dispatchEvent(new CustomEvent('tvskipbackward'));
+    }
+
+    /**
+     * Handle menu button press
+     * Dispatches custom event for game-specific handling
+     */
+    handleMenu() {
+        console.log('TV Remote: Menu button handled');
+        document.dispatchEvent(new CustomEvent('tvmenu'));
     }
     
     /**

@@ -53,11 +53,13 @@ function initializeApp() {
 /**
  * Setup Fire TV remote button handlers using standard keydown events
  * Maps Fire TV remote buttons to game functions using reliable key codes
+ * Supports both key names and Android KeyEvent constants for different Fire TV remote types
  */
 function setupTVRemoteHandlers() {
     document.addEventListener('keydown', (event) => {
         const key = event.key;
         const code = event.code;
+        const keyCode = event.keyCode;
         
         // Log all key events to debug panel
         logKeyEvent(event);
@@ -74,8 +76,13 @@ function setupTVRemoteHandlers() {
         
         const currentScreen = document.querySelector('.screen.active');
         
-        console.log('Fire TV Key pressed:', key, 'Code:', code);
+        console.log('Fire TV Key pressed:', key, 'Code:', code, 'KeyCode:', keyCode);
         
+        // Handle Android KeyEvent constants for Fire TV remotes
+        // These correspond to the KEYCODE_* constants from Android KeyEvent class
+        handleFireTVKeyCode(keyCode, currentScreen, event);
+        
+        // Handle key names for other Fire TV remote types
         switch (key) {
             // Play/Pause button - Draw from stock
             case 'MediaPlayPause':
@@ -165,7 +172,162 @@ function setupTVRemoteHandlers() {
         }
     });
     
-    console.log('Fire TV remote handlers initialized with standard keydown events');
+    console.log('Fire TV remote handlers initialized with standard keydown events and Android KeyEvent support');
+}
+
+/**
+ * Handle Fire TV remote buttons using Android KeyEvent constants
+ * Maps keyCode numbers to corresponding Fire TV remote actions
+ * 
+ * Reference: Android KeyEvent constants
+ * KEYCODE_DPAD_CENTER = 23, KEYCODE_BUTTON_A = 96
+ * KEYCODE_DPAD_LEFT = 21, KEYCODE_DPAD_RIGHT = 22  
+ * KEYCODE_DPAD_UP = 19, KEYCODE_DPAD_DOWN = 20
+ * KEYCODE_BACK = 4, KEYCODE_MENU = 82
+ * KEYCODE_MEDIA_PLAY_PAUSE = 85, KEYCODE_MEDIA_REWIND = 89, KEYCODE_MEDIA_FAST_FORWARD = 90
+ */
+function handleFireTVKeyCode(keyCode, currentScreen, event) {
+    // Map Android KeyEvent constants to actions
+    switch (keyCode) {
+        // D-Pad Center (Select) - KEYCODE_DPAD_CENTER = 23
+        case 23:
+        // Game Controller A Button - KEYCODE_BUTTON_A = 96  
+        case 96:
+            console.log('Fire TV D-Pad Center/A button pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('D-Pad Center/A Button', `Android KeyCode ${keyCode} (KEYCODE_DPAD_CENTER/BUTTON_A)`);
+            // Let the TV remote handler manage focus and selection
+            if (solitaireGame?.tvRemote) {
+                event.preventDefault();
+                solitaireGame.tvRemote.handleSelect();
+            }
+            break;
+            
+        // D-Pad Left - KEYCODE_DPAD_LEFT = 21
+        case 21:
+            console.log('Fire TV D-Pad Left pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('D-Pad Left', `Android KeyCode ${keyCode} (KEYCODE_DPAD_LEFT)`);
+            if (solitaireGame?.tvRemote) {
+                event.preventDefault();
+                solitaireGame.tvRemote.navigateLeft();
+            }
+            break;
+            
+        // D-Pad Right - KEYCODE_DPAD_RIGHT = 22  
+        case 22:
+            console.log('Fire TV D-Pad Right pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('D-Pad Right', `Android KeyCode ${keyCode} (KEYCODE_DPAD_RIGHT)`);
+            if (solitaireGame?.tvRemote) {
+                event.preventDefault();
+                solitaireGame.tvRemote.navigateRight();
+            }
+            break;
+            
+        // D-Pad Up - KEYCODE_DPAD_UP = 19
+        case 19:
+            console.log('Fire TV D-Pad Up pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('D-Pad Up', `Android KeyCode ${keyCode} (KEYCODE_DPAD_UP)`);
+            if (solitaireGame?.tvRemote) {
+                event.preventDefault();
+                solitaireGame.tvRemote.navigateUp();
+            }
+            break;
+            
+        // D-Pad Down - KEYCODE_DPAD_DOWN = 20
+        case 20:
+            console.log('Fire TV D-Pad Down pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('D-Pad Down', `Android KeyCode ${keyCode} (KEYCODE_DPAD_DOWN)`);
+            if (solitaireGame?.tvRemote) {
+                event.preventDefault();
+                solitaireGame.tvRemote.navigateDown();
+            }
+            break;
+            
+        // Back Button - KEYCODE_BACK = 4
+        case 4:
+            console.log('Fire TV Back button pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('Back Button', `Android KeyCode ${keyCode} (KEYCODE_BACK)`);
+            event.preventDefault();
+            // Delegate to UI manager for proper back navigation
+            document.dispatchEvent(new CustomEvent('tvback'));
+            break;
+            
+        // Menu Button - KEYCODE_MENU = 82
+        case 82:
+            console.log('Fire TV Menu button pressed (KeyCode:', keyCode, ')');
+            logFunctionCall('Menu Button', `Android KeyCode ${keyCode} (KEYCODE_MENU)`);
+            event.preventDefault();
+            if (currentScreen?.id === 'game-screen') {
+                solitaireGame.uiManager.showScreen('main-menu');
+            } else {
+                solitaireGame.uiManager.showScreen('main-menu');
+            }
+            break;
+            
+        // Play/Pause Button - KEYCODE_MEDIA_PLAY_PAUSE = 85
+        case 85:
+            if (currentScreen?.id === 'game-screen') {
+                event.preventDefault();
+                console.log('Fire TV Play/Pause button pressed (KeyCode:', keyCode, ') - Drawing from stock');
+                logFunctionCall('Play/Pause Button - Draw from stock', `Android KeyCode ${keyCode} (KEYCODE_MEDIA_PLAY_PAUSE)`);
+                const stockPile = document.querySelector('.stock-pile');
+                if (stockPile) {
+                    stockPile.click();
+                }
+            }
+            break;
+            
+        // Rewind Button - KEYCODE_MEDIA_REWIND = 89  
+        case 89:
+            if (currentScreen?.id === 'game-screen') {
+                event.preventDefault();
+                console.log('Fire TV Rewind button pressed (KeyCode:', keyCode, ') - Undo move');
+                logFunctionCall('Rewind Button - Undo move', `Android KeyCode ${keyCode} (KEYCODE_MEDIA_REWIND)`);
+                const undoBtn = document.getElementById('undo-btn');
+                if (undoBtn && !undoBtn.disabled) {
+                    undoBtn.click();
+                }
+            }
+            break;
+            
+        // Fast Forward Button - KEYCODE_MEDIA_FAST_FORWARD = 90
+        case 90:
+            if (currentScreen?.id === 'game-screen') {
+                event.preventDefault();
+                console.log('Fire TV Fast Forward button pressed (KeyCode:', keyCode, ') - Show hint');
+                logFunctionCall('Fast Forward Button - Show hint', `Android KeyCode ${keyCode} (KEYCODE_MEDIA_FAST_FORWARD)`);
+                const hintBtn = document.getElementById('hint-btn');
+                if (hintBtn && !hintBtn.disabled) {
+                    hintBtn.click();
+                }
+            }
+            break;
+            
+        // Channel Up Button - KEYCODE_CHANNEL_UP = 166
+        case 166:
+            if (currentScreen?.id === 'game-screen') {
+                event.preventDefault();
+                console.log('Fire TV Channel Up button pressed (KeyCode:', keyCode, ') - Show hint');
+                logFunctionCall('Channel Up Button - Show hint', `Android KeyCode ${keyCode} (KEYCODE_CHANNEL_UP)`);
+                const hintBtn = document.getElementById('hint-btn');
+                if (hintBtn && !hintBtn.disabled) {
+                    hintBtn.click();
+                }
+            }
+            break;
+            
+        // Channel Down Button - KEYCODE_CHANNEL_DOWN = 167
+        case 167:
+            if (currentScreen?.id === 'game-screen') {
+                event.preventDefault();
+                console.log('Fire TV Channel Down button pressed (KeyCode:', keyCode, ') - Undo move');
+                logFunctionCall('Channel Down Button - Undo move', `Android KeyCode ${keyCode} (KEYCODE_CHANNEL_DOWN)`);
+                const undoBtn = document.getElementById('undo-btn');
+                if (undoBtn && !undoBtn.disabled) {
+                    undoBtn.click();
+                }
+            }
+            break;
+    }
 }
 
 /**
