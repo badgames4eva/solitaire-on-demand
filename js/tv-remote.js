@@ -110,15 +110,19 @@ class TVRemoteHandler {
             'ArrowLeft': 'left',
             'ArrowRight': 'right',
             'Enter': 'select',
+            'KEYCODE_ENTER': 'select',
             'Escape': 'GoBack',
             'Space': 'select',        
             'Backspace': 'GoBack',
+            'KEYCODE_BACK': 'GoBack',
             'Tab': 'menu',
             // Additional mappings for game functions
             'KeyH': 'MediaFastForward',       // H key for Hint (maps to MediaFastForward button)
             'KeyU': 'MediaRewind',            // U key for Undo (maps to MediaRewind button)  
             'KeyM': 'menu',                   // M key for Menu (maps to Menu button)
-            'KeyP': 'MediaPlayPause'          // P key for Play/Pause (stock pile)
+            'KeyP': 'MediaPlayPause',          // P key for Play/Pause (stock pile)
+            'KEYCODE_MEDIA_PLAY_PAUSE': 'MediaPlayPause',          // P key for Play/Pause (stock pile)
+            
         };
         return keyMap[key];
     }
