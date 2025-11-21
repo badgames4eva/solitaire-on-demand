@@ -25,7 +25,7 @@ Solitaire On Demand now supports multiple types of Fire TV remotes using both tr
 ### System Controls  
 | Button | Android KeyCode | Key Name | Function |
 |--------|----------------|----------|----------|
-| Back | 4 (KEYCODE_BACK) | GoBack/Escape | Go back/Exit screens |
+| Back | 4 (KEYCODE_BACK) | GoBack/Escape | Go back/Exit screens (Fixed: Direct call to UI manager) |
 | Menu | 82 (KEYCODE_MENU) | ContextMenu | Open main menu |
 | Home | N/A (System) | N/A | Return to Fire TV home (cannot be intercepted) |
 

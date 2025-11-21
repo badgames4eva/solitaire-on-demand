@@ -247,8 +247,14 @@ function handleFireTVKeyCode(keyCode, currentScreen, event) {
             console.log('Fire TV Back button pressed (KeyCode:', keyCode, ')');
             logFunctionCall('Back Button', `Android KeyCode ${keyCode} (KEYCODE_BACK)`);
             event.preventDefault();
-            // Delegate to UI manager for proper back navigation
-            document.dispatchEvent(new CustomEvent('tvback'));
+            event.stopPropagation();
+            // Directly call UI manager's back button handler to avoid event conflicts
+            if (solitaireGame?.uiManager) {
+                solitaireGame.uiManager.handleBackButton();
+            } else {
+                // Fallback: dispatch custom event
+                document.dispatchEvent(new CustomEvent('tvback'));
+            }
             break;
             
         // Menu Button - KEYCODE_MENU = 82
