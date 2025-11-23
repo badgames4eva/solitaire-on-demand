@@ -801,33 +801,33 @@ class UIManager {
             event.stopPropagation();
             event.preventDefault();
             
-            switch (event.key) {
-                case 'ArrowLeft':
-                case 'ArrowUp':
-                    currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
-                    buttons[currentFocus].focus();
-                    buttons[currentFocus].classList.add('focused');
-                    buttons[1 - currentFocus].classList.remove('focused');
-                    break;
-                case 'ArrowRight':
-                case 'ArrowDown':
-                case 'Tab':
-                    currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
-                    buttons[currentFocus].focus();
-                    buttons[currentFocus].classList.add('focused');
-                    buttons[1 - currentFocus].classList.remove('focused');
-                    break;
-                case 'Enter':
-                case ' ':
-                    buttons[currentFocus].click();
-                    break;
-                case 'Escape':
-                    this.dismissExitConfirmation();
-                    break;
-                default:
-                    // Prevent any other keys from reaching background
-                    break;
+            // Handle both string keys and Android KeyEvent constants
+            const key = event.key;
+            const keyCode = event.keyCode;
+            
+            // Navigation: Left/Up (Android KeyEvent constants: 21=LEFT, 19=UP)
+            if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 21 || keyCode === 19) {
+                currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
             }
+            // Navigation: Right/Down/Tab (Android KeyEvent constants: 22=RIGHT, 20=DOWN)
+            else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || keyCode === 22 || keyCode === 20) {
+                currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
+            }
+            // Select: Enter/Space (Android KeyEvent constants: 23=CENTER, 96=BUTTON_A)
+            else if (key === 'Enter' || key === ' ' || keyCode === 23 || keyCode === 96) {
+                buttons[currentFocus].click();
+            }
+            // Back: Escape (Android KeyEvent constants: 4=BACK, 27=ESCAPE)
+            else if (key === 'Escape' || keyCode === 4 || keyCode === 27) {
+                this.dismissExitConfirmation();
+            }
+            // Prevent any other keys from reaching background
         };
         
         // Add event listener to modal itself to capture all events
@@ -1896,21 +1896,21 @@ class UIManager {
      */
     setupModalHandlers() {
         const modal = document.getElementById('game-over-modal');
+        
+        // Store cleanup functions to avoid memory leaks
+        if (!modal._modalCleanup) {
+            modal._modalCleanup = [];
+        } else {
+            // Clean up previous handlers
+            modal._modalCleanup.forEach(cleanup => cleanup());
+            modal._modalCleanup = [];
+        }
+        
         const modalButtons = modal.querySelectorAll('.modal-btn');
         
-        // Remove any existing event listeners to prevent duplicates
-        modalButtons.forEach(button => {
-            // Clone the button to remove all event listeners
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
-        });
-        
-        // Get the updated button references after cloning
-        const updatedButtons = modal.querySelectorAll('.modal-btn');
-        
         // Add click handlers with auto-hide functionality
-        updatedButtons.forEach(button => {
-            button.addEventListener('click', (event) => {
+        modalButtons.forEach(button => {
+            const clickHandler = (event) => {
                 const action = button.dataset.action;
                 
                 // Hide modal immediately
@@ -1923,65 +1923,116 @@ class UIManager {
                 setTimeout(() => {
                     this.tvRemote.refresh();
                 }, 100);
-            });
+            };
             
-            // Add keyboard navigation support
-            button.addEventListener('keydown', (event) => {
-                switch (event.key) {
-                    case 'Enter':
-                    case ' ':
-                        event.preventDefault();
-                        button.click();
-                        break;
-                   
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        event.preventDefault();
-                        // Navigate between modal buttons
-                        const buttons = Array.from(updatedButtons);
-                        const currentIndex = buttons.indexOf(button);
-                        let nextIndex;
-                        
-                        if (event.key === 'ArrowLeft') {
-                            nextIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
-                        } else {
-                            nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
-                        }
-                        
-                        buttons[nextIndex].focus();
-                        this.tvRemote.focusElement(buttons[nextIndex]);
-                        break;
-                }
-            });
+            button.addEventListener('click', clickHandler);
+            modal._modalCleanup.push(() => button.removeEventListener('click', clickHandler));
         });
         
-        // Setup TV remote navigation within modal
-        const handleModalNavigation = (event) => {
+        // Setup comprehensive keyboard and TV remote navigation within modal
+        const handleModalKeydown = (event) => {
             if (!modal.classList.contains('active')) return;
+            
+            // Stop all events from propagating to background
+            event.stopPropagation();
+            event.preventDefault();
             
             const buttons = Array.from(modal.querySelectorAll('.modal-btn'));
             const currentButton = document.activeElement;
-            const currentIndex = buttons.indexOf(currentButton);
+            let currentIndex = buttons.indexOf(currentButton);
             
-            switch (event.detail?.source) {
-                case 'remote':
-                    // Handle TV remote navigation
-                    event.preventDefault();
-                    break;
+            // If no button is focused, focus the first one
+            if (currentIndex === -1) {
+                currentIndex = 0;
+                buttons[0].focus();
+                return;
             }
-        };
-        
-        // Add TV remote event listeners for modal
-        document.addEventListener('tvleft', handleModalNavigation);
-        document.addEventListener('tvright', handleModalNavigation);
-        document.addEventListener('tvselect', handleModalNavigation);
-        document.addEventListener('tvback', (event) => {
-            if (modal.classList.contains('active')) {
-                event.preventDefault();
+            
+            // Handle both string keys and Android KeyEvent constants
+            const key = event.key;
+            const keyCode = event.keyCode;
+            
+            // Navigation: Left/Up (Android KeyEvent constants: 21=LEFT, 19=UP)
+            if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 21 || keyCode === 19) {
+                const nextIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+                buttons[nextIndex].focus();
+                buttons[nextIndex].classList.add('focused');
+                buttons[currentIndex].classList.remove('focused');
+            }
+            // Navigation: Right/Down/Tab (Android KeyEvent constants: 22=RIGHT, 20=DOWN)
+            else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || keyCode === 22 || keyCode === 20) {
+                const nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+                buttons[nextIndex].focus();
+                buttons[nextIndex].classList.add('focused');
+                buttons[currentIndex].classList.remove('focused');
+            }
+            // Select: Enter/Space (Android KeyEvent constants: 23=CENTER, 96=BUTTON_A)
+            else if (key === 'Enter' || key === ' ' || keyCode === 23 || keyCode === 96) {
+                buttons[currentIndex].click();
+            }
+            // Back: Escape (Android KeyEvent constants: 4=BACK, 27=ESCAPE)
+            else if (key === 'Escape' || keyCode === 4 || keyCode === 27) {
                 modal.classList.remove('active');
                 this.tvRemote.refresh();
             }
-        });
+        };
+        
+        // Add keyboard event listener
+        document.addEventListener('keydown', handleModalKeydown, true);
+        modal._modalCleanup.push(() => document.removeEventListener('keydown', handleModalKeydown, true));
+        
+        // Handle TV remote back button in modal (dismiss modal)
+        const handleModalBack = (event) => {
+            if (modal.classList.contains('active')) {
+                event.preventDefault();
+                event.stopPropagation();
+                modal.classList.remove('active');
+                this.tvRemote.refresh();
+            }
+        };
+        
+        document.addEventListener('tvback', handleModalBack, true);
+        modal._modalCleanup.push(() => document.removeEventListener('tvback', handleModalBack, true));
+        
+        // Prevent clicks outside modal from closing it (force explicit choice)
+        const modalClickHandler = (event) => {
+            if (event.target === modal) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Don't close modal - force explicit button choice
+            }
+        };
+        
+        modal.addEventListener('click', modalClickHandler);
+        modal._modalCleanup.push(() => modal.removeEventListener('click', modalClickHandler));
+        
+        // Focus trap: ensure focus stays within modal
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        const focusTrapHandler = (event) => {
+            if (!modal.classList.contains('active')) return;
+            
+            if (event.key === 'Tab') {
+                if (event.shiftKey) {
+                    // Shift + Tab
+                    if (document.activeElement === firstFocusable) {
+                        event.preventDefault();
+                        lastFocusable.focus();
+                    }
+                } else {
+                    // Tab
+                    if (document.activeElement === lastFocusable) {
+                        event.preventDefault();
+                        firstFocusable.focus();
+                    }
+                }
+            }
+        };
+        
+        modal.addEventListener('keydown', focusTrapHandler);
+        modal._modalCleanup.push(() => modal.removeEventListener('keydown', focusTrapHandler));
     }
 
     /**
