@@ -37,7 +37,7 @@
                 <button class="menu-btn focusable" data-action="new-game" data-difficulty="medium">Medium Game</button>
                 <button class="menu-btn focusable" data-action="new-game" data-difficulty="hard">Hard Game</button>
                 <button class="menu-btn focusable" data-action="stats">Statistics</button>
-                <button class="menu-btn focusable" data-action="settings">Settings</button>
+                <button class="menu-btn focusable" data-action="settings"  style="display: none;">Settings</button>
                 <button class="menu-btn focusable" data-action="exit" style="background-color: #d32f2f; color: white;">Exit</button>
             </div>
             
@@ -173,7 +173,7 @@
 
         <!-- SETTINGS SCREEN -->
         <!-- Game configuration options and preferences -->
-        <div id="settings-screen" class="screen">
+        <div id="settings-screen" class="screen" >
             <h2>Settings</h2>
             
             <!-- Settings options container -->
@@ -191,7 +191,7 @@
                 </div>
                 
                 <!-- Sound effects setting: enable/disable game audio feedback -->
-                <div class="setting-item" style="display: none;">
+                <div class="setting-item">
                     <label>Sound effects:</label>
                     <input type="checkbox" id="sound-effects" class="focusable" checked>
                 </div>
