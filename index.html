@@ -73,6 +73,10 @@
                         <span class="btn-text">Menu</span>
                         <span class="remote-button-hint"></span>
                     </button>    <!-- Return to main menu -->
+                    <button class="control-btn focusable" id="give-up-btn" data-action="give-up">
+                        <span class="btn-text">Give Up</span>
+                        <span class="remote-button-hint"></span>
+                    </button>   <!-- Voluntarily end current game -->
                 </div>
             </div>
 
@@ -123,6 +127,19 @@
             <!-- Shows cards that are currently selected/being moved -->
             <!-- Appears at bottom center of screen during card selection -->
             <div id="selected-cards" class="selected-cards"></div>
+            
+            <!-- NO MOVES LEFT INDICATOR -->
+            <!-- Shows when no moves are available to help the user -->
+            <div id="no-moves-indicator" class="no-moves-indicator hidden">
+                <div class="no-moves-content">
+                    <h3>No Moves Available</h3>
+                    <p>Try drawing from the stock pile or start a new game</p>
+                    <div class="no-moves-actions">
+                        <button class="control-btn focusable" id="draw-stock-btn">Draw Cards</button>
+                        <button class="control-btn focusable" id="new-game-btn">New Game</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- DEBUG PANEL FOR FIRE TV REMOTE TESTING -->

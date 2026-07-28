@@ -416,6 +416,10 @@ class SoundManager {
         this.playSound('autoComplete', 1.0, 0.8);
     }
 
+    gameOver() {
+        this.playSound('moveInvalid', 0.8, 0.6); // Use a lower-pitched invalid move sound for game over
+    }
+
     /**
      * Set master volume
      */

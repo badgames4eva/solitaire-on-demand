@@ -100,7 +100,7 @@ body {
 .menu-btn:hover,
 .menu-btn.focused {
     background: rgba(255, 255, 255, 0.2); /* Brighter background */
-    border-color: #ffdd44; /* Yellow highlight border */
+   /* border-color: #ffdd44;  Yellow highlight border */
     transform: scale(1.05); /* Slight size increase for feedback */
 }
 
@@ -156,7 +156,7 @@ body {
 .remote-button-hint {
     font-size: 1rem;
     opacity: 0.7;
-    color: #ffdd44;
+    /*color: #ffdd44;*/
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
     margin-left: auto; /* Push to right side of button */
 }
@@ -167,10 +167,13 @@ body {
 }
 
 /* Control button hover and focus states */
-.control-btn:hover,
-.control-btn.focused {
+.control-btn:hover {
     background: rgba(255, 255, 255, 0.2);
-    border-color: #ffdd44; /* Yellow highlight for TV remote navigation */
+}
+
+/* Remove focus indicator for control buttons */
+.control-btn.focused {
+    /* No visual changes for focused state */
 }
 
 /* TV Remote Button Indicators - shown when using TV remote navigation */
@@ -256,7 +259,7 @@ body.tv-remote-mode .control-btn.focused::before {
 
 /* Foundation pile focus state for TV remote navigation */
 .foundation-pile.focused {
-    border-color: #ffdd44; /* Yellow highlight */
+    /*border-color: #ffdd44;  Yellow highlight */
     background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
@@ -377,7 +380,7 @@ body.tv-remote-mode .control-btn.focused::before {
 /* Focus states for TV remote navigation */
 .stock-pile.focused,
 .waste-pile.focused {
-    border-color: #ffdd44; /* Yellow highlight */
+    /* border-color: #ffdd44;  Yellow highlight removed */
     background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
@@ -427,7 +430,7 @@ body.tv-remote-mode .control-btn.focused::before {
 
 /* Tableau column focus state */
 .tableau-column.focused {
-    border-color: #ffdd44; /* Yellow highlight */
+    /* border-color: #ffdd44;  Yellow highlight removed */
     background: rgba(255, 221, 68, 0.1); /* Yellow tint */
 }
 
@@ -543,13 +546,80 @@ body.tv-remote-mode .control-btn.focused::before {
 
 /* Selected Cards Display */
 .selected-cards {
-    position: fixed;
-    bottom: 0px;
+    position: absolute;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 5px;
     z-index: 1000;
+}
+
+/* No Moves Left Indicator */
+.no-moves-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    z-index: 4000;
+    border: 2px solid #ffdd44;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    max-width: 400px;
+    animation: slideInScale 0.3s ease-out;
+}
+
+.no-moves-indicator.hidden {
+    display: none;
+}
+
+.no-moves-content h3 {
+    margin: 0 0 1rem 0;
+    color: #ffdd44;
+    font-size: 1.5rem;
+}
+
+.no-moves-content p {
+    margin: 0 0 1.5rem 0;
+    color: #cccccc;
+    font-size: 1rem;
+}
+
+.no-moves-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.no-moves-actions .control-btn {
+    min-width: 120px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+@keyframes slideInScale {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Focus styles for no moves indicator buttons */
+.no-moves-actions .control-btn:focus,
+.no-moves-actions .control-btn.focused {
+    background-color: #4CAF50;
+    transform: scale(1.05);
+    outline: 2px solid #ffdd44;
 }
 
 /* Statistics Screen */
@@ -669,13 +739,13 @@ body.tv-remote-mode .control-btn.focused::before {
 .modal-btn:hover,
 .modal-btn.focused {
     background: rgba(255, 255, 255, 0.2);
-    border-color: #ffdd44;
+    /* border-color: #ffdd44;  Yellow border removed */
 }
 
 /* Focus Management */
 .focusable.focused {
-    outline: 2px solid #ffdd44;
-    outline-offset: 2px;
+    /* outline: 2px solid #ffdd44;  Yellow outline removed */
+    /* outline-offset: 2px; */
 }
 
 /* Animations */

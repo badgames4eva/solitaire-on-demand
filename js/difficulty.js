@@ -144,11 +144,11 @@ class DifficultyManager {
     }
 
     /**
-     * Check if undo is available
+     * Check if undo is available (taking undo count from parameter)
      */
-    canUndo(currentUndoCount) {
+    canUndo(undoCount) {
         const limit = this.getUndoLimit();
-        return limit === -1 || currentUndoCount < limit;
+        return limit === -1 || undoCount < limit;
     }
 }
 

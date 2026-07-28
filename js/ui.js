@@ -58,9 +58,10 @@ class UIManager {
     setupEventListeners() {
         // Menu button handlers
         document.addEventListener('click', (event) => {
-            const target = event.target;
+            // Look for data-action attribute on clicked element or any parent
+            const target = event.target.closest('[data-action]');
             
-            if (target.matches('[data-action]')) {
+            if (target) {
                 // Resume audio context on first user interaction
                 if (this.soundManager) {
                     this.soundManager.resumeAudio();
@@ -138,6 +139,9 @@ class UIManager {
 
         // Custom TV remote navigation for game screen
         this.setupGameNavigation();
+        
+        // Setup no moves indicator event handlers
+        this.setupNoMovesIndicatorHandlers();
     }
 
     /**
@@ -318,7 +322,7 @@ class UIManager {
                 nav.currentRow = 0;
                 break;
             case 'controls':
-                // Move between control buttons (Hint, Undo, Menu)
+                // Move between control buttons (Hint, Undo, Menu, Give Up)
                 nav.currentColumn = Math.max(0, nav.currentColumn - 1);
                 break;
         }
@@ -364,8 +368,8 @@ class UIManager {
                 nav.currentRow = 0;
                 break;
             case 'controls':
-                // Move between control buttons (Hint, Undo, Menu)
-                nav.currentColumn = Math.min(2, nav.currentColumn + 1);
+                // Move between control buttons (Hint, Undo, Menu, Give Up)
+                nav.currentColumn = Math.min(3, nav.currentColumn + 1);
                 break;
         }
     }
@@ -562,8 +566,8 @@ class UIManager {
             case 'waste':
                 return document.querySelector('.waste-pile');
             case 'controls':
-                // Control buttons: 0=Hint, 1=Undo, 2=Menu
-                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn'];
+                // Control buttons: 0=Hint, 1=Undo, 2=Menu, 3=Give Up
+                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn', 'give-up-btn'];
                 return document.getElementById(controlButtons[nav.currentColumn]);
             default:
                 return null;
@@ -657,18 +661,25 @@ class UIManager {
 
     /**
      * Handle TV remote back button with history tracking
-     * Back button from game screen goes to main menu, exit dialog only via exit button
+     * Back button from game screen shows confirmation dialog to prevent accidental game loss
      */
     handleBackButton() {
         try {
             console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
             
-            // If there's history, go back to the previous screen
-            if (this.currentScreen === 'main-menu') {
+            // Special case: game screen - ALWAYS show confirmation dialog to prevent accidental game loss
+            if (this.currentScreen === 'game-screen') {
+                console.log('Back button pressed in game - showing leave game confirmation');
+                this.showLeaveGameConfirmation();
+                return;
+            }
+            // Main menu - show exit dialog
+            else if (this.currentScreen === 'main-menu') {
                 console.log('Already on main menu, showing exit dialog');
                 this.handleAppExit();
                 return;
             }
+            // Other screens with history - go back to previous screen
             else if (this.screenHistory.length > 0) {
                 const previousScreen = this.screenHistory.pop();
                 console.log('Going back to:', previousScreen);
@@ -676,8 +687,7 @@ class UIManager {
                 this.exitWarningShown = false; // Reset exit warning
                 return;
             }
-            // For any screen without history (including game-screen), go to main menu
-            // Exit dialog is ONLY shown via the dedicated Exit button, not back navigation
+            // For other screens without history, go to main menu directly
             else if (this.currentScreen !== 'main-menu') {
                 console.log('No history, navigating to main menu');
                 this.showScreen('main-menu');
@@ -1010,9 +1020,10 @@ class UIManager {
      * Handle TV remote menu button
      */
     handleMenuButton() {
-        // Show game menu or settings based on current screen
+        // Show leave game confirmation when in active game, same as back button
         if (this.currentScreen === 'game-screen') {
-            this.showScreen('settings-screen');
+            console.log('Menu button pressed in game - showing leave game confirmation');
+            this.showLeaveGameConfirmation();
         } else {
             this.showScreen('main-menu');
         }
@@ -1163,7 +1174,7 @@ class UIManager {
                 this.handleWasteClick();
                 break;
             case 'controls':
-                // Activate control buttons: 0=Hint, 1=Undo, 2=Menu
+                // Activate control buttons: 0=Hint, 1=Undo, 2=Menu, 3=Give Up
                 switch (nav.currentColumn) {
                     case 0: // Hint button
                         this.showHint();
@@ -1173,6 +1184,9 @@ class UIManager {
                         break;
                     case 2: // Menu button
                         this.showScreen('main-menu');
+                        break;
+                    case 3: // Give Up button
+                        this.handleGiveUp();
                         break;
                 }
                 break;
@@ -1219,8 +1233,8 @@ class UIManager {
                 focusElement = document.querySelector('.waste-pile');
                 break;
             case 'controls':
-                // Control buttons: 0=Hint, 1=Undo, 2=Menu
-                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn'];
+                // Control buttons: 0=Hint, 1=Undo, 2=Menu, 3=Give Up
+                const controlButtons = ['hint-btn', 'undo-btn', 'menu-btn', 'give-up-btn'];
                 focusElement = document.getElementById(controlButtons[nav.currentColumn]);
                 break;
         }
@@ -1251,6 +1265,9 @@ class UIManager {
                 break;
             case 'new-game-same':
                 this.startNewGame(this.gameState.difficulty);
+                break;
+            case 'give-up':
+                this.handleGiveUp();
                 break;
             case 'exit':
                 this.handleAppExit();
@@ -1407,11 +1424,12 @@ class UIManager {
             const card = this.gameState.waste[i];
             const cardElement = card.createElement();
             
-            // Position cards with slight offset
-            const offset = (i - startIndex) * 2;
+            // Position cards with more visible offset (especially for hard mode with 3 cards)
+            const offset = (i - startIndex) * 20; // Increased from 2px to 20px for better visibility
             cardElement.style.left = `${offset}px`;
             cardElement.style.top = `${offset}px`;
             cardElement.style.zIndex = i;
+            cardElement.style.position = 'absolute';
             
             // Only top card is clickable
             if (i === this.gameState.waste.length - 1) {
@@ -1690,6 +1708,12 @@ class UIManager {
         
         // Update button states
         this.updateButtonStates();
+        
+        // Check for no moves left after every display update (includes after moves)
+        // Add small delay to ensure all rendering is complete
+        setTimeout(() => {
+            this.checkNoMovesLeft();
+        }, 100);
     }
 
     /**
@@ -1724,10 +1748,18 @@ class UIManager {
             hintBtn.style.display = 'none';
         }
         
-        // Undo button
-        const canUndo = this.gameState.moveHistory.length > 0 && 
-                       this.difficultyManager.canUndo(this.gameState.moves);
+        // Undo button - use new canUndo method from GameState
+        const canUndo = this.gameState.canUndo(this.difficultyManager);
         undoBtn.disabled = !canUndo;
+        
+        // Add visual indication when undo limit is reached
+        if (this.gameState.actualMovesMade > 0 && !canUndo) {
+            undoBtn.title = `Undo limit reached (${this.difficultyManager.getUndoLimit()} max)`;
+            undoBtn.classList.add('limit-reached');
+        } else {
+            undoBtn.title = 'Undo last move';
+            undoBtn.classList.remove('limit-reached');
+        }
     }
 
     /**
@@ -1866,7 +1898,9 @@ class UIManager {
         
         const stats = this.gameState.getGameStats();
         
-        // Update modal content
+        // Update modal content for win
+        document.getElementById('game-over-title').textContent = 'Congratulations!';
+        document.getElementById('game-over-message').textContent = 'You won the game!';
         document.getElementById('final-time').textContent = this.gameState.getFormattedTime();
         document.getElementById('final-moves').textContent = stats.moves;
         document.getElementById('final-score').textContent = stats.score;
@@ -1889,6 +1923,539 @@ class UIManager {
                 this.tvRemote.focusElement(firstButton);
             }
         }, 100);
+    }
+
+    /**
+     * Handle game loss (no moves available)
+     */
+    handleGameLoss() {
+        this.stopGameTimer();
+        
+        const stats = this.gameState.getGameStats();
+        
+        // Update modal content for loss
+        document.getElementById('game-over-title').textContent = 'Game Over';
+        document.getElementById('game-over-message').textContent = 'No more moves available! Better luck next time.';
+        document.getElementById('final-time').textContent = this.gameState.getFormattedTime();
+        document.getElementById('final-moves').textContent = stats.moves;
+        document.getElementById('final-score').textContent = stats.score;
+        
+        // Save loss statistics (gameWon will be false)
+        this.saveGameStats(stats);
+        
+        // Show modal
+        const modal = document.getElementById('game-over-modal');
+        modal.classList.add('active');
+        
+        // Setup modal button handlers with auto-hide
+        this.setupModalHandlers();
+        
+        // Focus first button in modal for TV remote navigation
+        setTimeout(() => {
+            this.tvRemote.refresh();
+            const firstButton = modal.querySelector('.modal-btn.focusable');
+            if (firstButton) {
+                this.tvRemote.focusElement(firstButton);
+            }
+        }, 100);
+    }
+
+    /**
+     * Show confirmation dialog when back button is pressed during active gameplay
+     */
+    showLeaveGameConfirmation() {
+        // Prevent multiple modals - remove existing if any
+        const existingModal = document.getElementById('leave-game-confirmation-modal');
+        if (existingModal) {
+            if (existingModal._cleanup) {
+                existingModal._cleanup();
+            }
+            existingModal.remove();
+        }
+        
+        // Create leave game confirmation modal
+        const modal = document.createElement('div');
+        modal.id = 'leave-game-confirmation-modal';
+        modal.className = 'modal active';
+        modal.style.zIndex = '5000';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="text-align: center; padding: 2rem; max-width: 500px;">
+                <h2 style="margin-bottom: 1rem; color: #ffdd44;">Leave Current Game?</h2>
+                <p style="margin-bottom: 2rem; color: #ccc;">Your progress will be lost if you leave now.</p>
+               
+                <div class="modal-buttons" style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="leave-stay-btn" class="modal-btn focusable" data-action="stay" 
+                            style="padding: 1rem 2rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Stay in Game
+                    </button>
+                    <button id="leave-confirm-btn" class="modal-btn focusable" data-action="leave"
+                            style="padding: 1rem 2rem; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Leave Game
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Setup leave game modal handlers
+        this.setupLeaveGameModalHandlers(modal);
+        
+        // Focus the "Stay in Game" button by default (safer choice)
+        setTimeout(() => {
+            const stayButton = modal.querySelector('#leave-stay-btn');
+            if (stayButton) {
+                stayButton.focus();
+                stayButton.classList.add('focused');
+                // Also use TV remote focus if available
+                if (this.tvRemote) {
+                    this.tvRemote.focusElement(stayButton);
+                }
+            }
+        }, 100);
+        
+        // Auto-dismiss after 10 seconds (stay in game)
+        setTimeout(() => {
+            if (document.getElementById('leave-game-confirmation-modal')) {
+                this.dismissLeaveGameConfirmation();
+            }
+        }, 10000);
+    }
+
+    /**
+     * Setup leave game confirmation modal handlers
+     */
+    setupLeaveGameModalHandlers(modal) {
+        const stayButton = modal.querySelector('#leave-stay-btn');
+        const leaveButton = modal.querySelector('#leave-confirm-btn');
+        
+        // Make modal focusable and trap focus
+        modal.setAttribute('tabindex', '-1');
+        modal.style.outline = 'none';
+        
+        // Handle stay button
+        stayButton.addEventListener('click', () => {
+            this.dismissLeaveGameConfirmation();
+        });
+        
+        // Handle leave button
+        leaveButton.addEventListener('click', () => {
+            this.confirmLeaveGame();
+        });
+        
+        // Handle keyboard/remote navigation within modal
+        const buttons = [stayButton, leaveButton];
+        let currentFocus = 0;
+        
+        const handleModalKeydown = (event) => {
+            // Stop all events from propagating to background
+            event.stopPropagation();
+            event.preventDefault();
+            
+            // Handle both string keys and Android KeyEvent constants
+            const key = event.key;
+            const keyCode = event.keyCode;
+            
+            // Navigation: Left/Up (Android KeyEvent constants: 21=LEFT, 19=UP)
+            if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 21 || keyCode === 19) {
+                currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
+            }
+            // Navigation: Right/Down/Tab (Android KeyEvent constants: 22=RIGHT, 20=DOWN)
+            else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || keyCode === 22 || keyCode === 20) {
+                currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
+            }
+            // Select: Enter/Space (Android KeyEvent constants: 23=CENTER, 96=BUTTON_A)
+            else if (key === 'Enter' || key === ' ' || keyCode === 23 || keyCode === 96) {
+                buttons[currentFocus].click();
+            }
+            // Back: Escape (Android KeyEvent constants: 4=BACK, 27=ESCAPE)
+            else if (key === 'Escape' || keyCode === 4 || keyCode === 27) {
+                this.dismissLeaveGameConfirmation();
+            }
+            // Prevent any other keys from reaching background
+        };
+        
+        // Add event listener to modal itself to capture all events
+        modal.addEventListener('keydown', handleModalKeydown, true);
+        
+        // Also add to document as backup, but with lower priority
+        const documentKeydownHandler = (event) => {
+            if (modal.classList.contains('active')) {
+                event.stopPropagation();
+                event.preventDefault();
+                handleModalKeydown(event);
+            }
+        };
+        document.addEventListener('keydown', documentKeydownHandler, true);
+        
+        // Handle TV remote back button in modal (dismiss modal - stay in game)
+        const handleModalBack = (event) => {
+            if (modal.classList.contains('active')) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.dismissLeaveGameConfirmation(); // Back button dismisses modal - stays in game
+            }
+        };
+        
+        document.addEventListener('tvback', handleModalBack, true);
+        
+        // Prevent clicks outside modal from closing it (force explicit choice)
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Don't close modal - force explicit button choice
+            }
+        });
+        
+        // Store cleanup function on modal for later removal
+        modal._cleanup = () => {
+            document.removeEventListener('keydown', documentKeydownHandler, true);
+            document.removeEventListener('tvback', handleModalBack, true);
+        };
+        
+        // Focus trap: ensure focus stays within modal
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                if (event.shiftKey) {
+                    // Shift + Tab
+                    if (document.activeElement === firstFocusable) {
+                        event.preventDefault();
+                        lastFocusable.focus();
+                    }
+                } else {
+                    // Tab
+                    if (document.activeElement === lastFocusable) {
+                        event.preventDefault();
+                        firstFocusable.focus();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Dismiss leave game confirmation and continue playing
+     */
+    dismissLeaveGameConfirmation() {
+        const modal = document.getElementById('leave-game-confirmation-modal');
+        if (modal) {
+            // Clean up event listeners
+            if (modal._cleanup) {
+                modal._cleanup();
+            }
+            modal.remove();
+        }
+        
+        // Refresh TV remote focus
+        setTimeout(() => {
+            if (this.tvRemote) {
+                this.tvRemote.refresh();
+            }
+        }, 100);
+    }
+
+    /**
+     * Confirm leaving the game and return to main menu
+     */
+    confirmLeaveGame() {
+        // Clean up the modal first
+        this.dismissLeaveGameConfirmation();
+        
+        // Play sound effect if available
+        if (this.soundManager) {
+            this.soundManager.menuClick();
+        }
+        
+        // Stop the game timer to prevent any timer-related state changes
+        this.stopGameTimer();
+        
+        // Clear any selected cards to clean up game state
+        this.clearSelection();
+        
+        // Mark the game as abandoned (not won or lost) to prevent stats modal
+        this.gameState.gameAbandoned = true;
+        this.gameState.gameEndTime = Date.now();
+        
+        // Return to main menu directly, bypassing any game-over modals
+        this.showScreen('main-menu');
+    }
+
+    /**
+     * Handle player giving up voluntarily
+     */
+    handleGiveUp() {
+        // Show styled confirmation dialog matching the exit confirmation
+        this.showGiveUpConfirmation();
+    }
+
+    /**
+     * Show give up confirmation popup following the same style as exit confirmation
+     */
+    showGiveUpConfirmation() {
+        // Prevent multiple modals - remove existing if any
+        const existingModal = document.getElementById('give-up-confirmation-modal');
+        if (existingModal) {
+            if (existingModal._cleanup) {
+                existingModal._cleanup();
+            }
+            existingModal.remove();
+        }
+        
+        // Create give up confirmation modal
+        const modal = document.createElement('div');
+        modal.id = 'give-up-confirmation-modal';
+        modal.className = 'modal active';
+        modal.style.zIndex = '5000';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="text-align: center; padding: 2rem; max-width: 500px;">
+                <h2 style="margin-bottom: 1rem; color: #ffdd44;">Give Up This Game?</h2>
+               
+                <div class="modal-buttons" style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="give-up-continue-btn" class="modal-btn focusable" data-action="continue" 
+                            style="padding: 1rem 2rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Keep Playing
+                    </button>
+                    <button id="give-up-confirm-btn" class="modal-btn focusable" data-action="give-up"
+                            style="padding: 1rem 2rem; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 1.1rem;">
+                        Give Up
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Setup give up modal handlers
+        this.setupGiveUpModalHandlers(modal);
+        
+        // Focus the "Keep Playing" button by default (safer choice)
+        setTimeout(() => {
+            const continueButton = modal.querySelector('#give-up-continue-btn');
+            if (continueButton) {
+                continueButton.focus();
+                continueButton.classList.add('focused');
+                // Also use TV remote focus if available
+                if (this.tvRemote) {
+                    this.tvRemote.focusElement(continueButton);
+                }
+            }
+        }, 100);
+        
+        // Auto-dismiss after 10 seconds (keep playing)
+        setTimeout(() => {
+            if (document.getElementById('give-up-confirmation-modal')) {
+                this.dismissGiveUpConfirmation();
+            }
+        }, 10000);
+    }
+
+    /**
+     * Setup give up confirmation modal handlers
+     */
+    setupGiveUpModalHandlers(modal) {
+        const continueButton = modal.querySelector('#give-up-continue-btn');
+        const giveUpButton = modal.querySelector('#give-up-confirm-btn');
+        
+        // Make modal focusable and trap focus
+        modal.setAttribute('tabindex', '-1');
+        modal.style.outline = 'none';
+        
+        // Handle continue button
+        continueButton.addEventListener('click', () => {
+            this.dismissGiveUpConfirmation();
+        });
+        
+        // Handle give up button
+        giveUpButton.addEventListener('click', () => {            
+            this.confirmGiveUp();
+        });
+        
+        // Handle keyboard/remote navigation within modal
+        const buttons = [continueButton, giveUpButton];
+        let currentFocus = 0;
+        
+        const handleModalKeydown = (event) => {
+            // Stop all events from propagating to background
+            event.stopPropagation();
+            event.preventDefault();
+            
+            // Handle both string keys and Android KeyEvent constants
+            const key = event.key;
+            const keyCode = event.keyCode;
+            
+            // Navigation: Left/Up (Android KeyEvent constants: 21=LEFT, 19=UP)
+            if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 21 || keyCode === 19) {
+                currentFocus = currentFocus > 0 ? currentFocus - 1 : buttons.length - 1;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
+            }
+            // Navigation: Right/Down/Tab (Android KeyEvent constants: 22=RIGHT, 20=DOWN)
+            else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || keyCode === 22 || keyCode === 20) {
+                currentFocus = currentFocus < buttons.length - 1 ? currentFocus + 1 : 0;
+                buttons[currentFocus].focus();
+                buttons[currentFocus].classList.add('focused');
+                buttons[1 - currentFocus].classList.remove('focused');
+            }
+            // Select: Enter/Space (Android KeyEvent constants: 23=CENTER, 96=BUTTON_A)
+            else if (key === 'Enter' || key === ' ' || keyCode === 23 || keyCode === 96) {
+                buttons[currentFocus].click();
+            }
+            // Back: Escape (Android KeyEvent constants: 4=BACK, 27=ESCAPE)
+            else if (key === 'Escape' || keyCode === 4 || keyCode === 27) {
+                this.dismissGiveUpConfirmation();
+            }
+            // Prevent any other keys from reaching background
+        };
+        
+        // Add event listener to modal itself to capture all events
+        modal.addEventListener('keydown', handleModalKeydown, true);
+        
+        // Also add to document as backup, but with lower priority
+        const documentKeydownHandler = (event) => {
+            if (modal.classList.contains('active')) {
+                event.stopPropagation();
+                event.preventDefault();
+                handleModalKeydown(event);
+            }
+        };
+        document.addEventListener('keydown', documentKeydownHandler, true);
+        
+        // Handle TV remote back button in modal (dismiss modal - keep playing)
+        const handleModalBack = (event) => {
+            if (modal.classList.contains('active')) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.dismissGiveUpConfirmation(); // Back button dismisses modal - keeps playing
+            }
+        };
+        
+        document.addEventListener('tvback', handleModalBack, true);
+        
+        // Prevent clicks outside modal from closing it (force explicit choice)
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Don't close modal - force explicit button choice
+            }
+        });
+        
+        // Store cleanup function on modal for later removal
+        modal._cleanup = () => {
+            document.removeEventListener('keydown', documentKeydownHandler, true);
+            document.removeEventListener('tvback', handleModalBack, true);
+        };
+        
+        // Focus trap: ensure focus stays within modal
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                if (event.shiftKey) {
+                    // Shift + Tab
+                    if (document.activeElement === firstFocusable) {
+                        event.preventDefault();
+                        lastFocusable.focus();
+                    }
+                } else {
+                    // Tab
+                    if (document.activeElement === lastFocusable) {
+                        event.preventDefault();
+                        firstFocusable.focus();
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Dismiss give up confirmation and continue playing
+     */
+    dismissGiveUpConfirmation() {
+        const modal = document.getElementById('give-up-confirmation-modal');
+        if (modal) {
+            // Clean up event listeners
+            if (modal._cleanup) {
+                modal._cleanup();
+            }
+            modal.remove();
+        }
+        
+        // Refresh TV remote focus
+        setTimeout(() => {
+            if (this.tvRemote) {
+                this.tvRemote.refresh();
+            }
+        }, 100);
+    }
+
+    /**
+     * Confirm giving up and end the game
+     */
+    confirmGiveUp() {
+        setTimeout(() => {
+            if (document.getElementById('give-up-confirmation-modal')) {
+                this.dismissGiveUpConfirmation();
+            }
+        }, 1);
+
+        // Add a small delay to ensure the give-up modal is fully removed before showing game-over modal
+        setTimeout(() => {
+            // Play sound effect if available
+            if (this.soundManager) {
+                this.soundManager.gameOver();
+            }
+
+            this.stopGameTimer();
+            
+            // Mark game as lost (voluntary surrender)
+            this.gameState.gameLost = true;
+            this.gameState.gameEndTime = Date.now();
+            
+            const stats = this.gameState.getGameStats();
+            
+            // Update modal content for voluntary surrender
+            document.getElementById('game-over-title').textContent = 'Game Ended';
+            document.getElementById('game-over-message').textContent = 'You chose to give up this game. Try again for a better result!';
+            document.getElementById('final-time').textContent = this.gameState.getFormattedTime();
+            document.getElementById('final-moves').textContent = stats.moves;
+            document.getElementById('final-score').textContent = stats.score;
+            
+            // Save loss statistics (gameWon will be false due to giving up)
+            this.saveGameStats(stats);
+            
+            // Show modal
+            const modal = document.getElementById('game-over-modal');
+            modal.classList.add('active');
+            
+            // Setup modal button handlers with auto-hide
+            this.setupModalHandlers();
+            
+            // Focus first button in modal for TV remote navigation
+            setTimeout(() => {
+                this.tvRemote.refresh();
+                const firstButton = modal.querySelector('.modal-btn.focusable');
+                if (firstButton) {
+                    this.tvRemote.focusElement(firstButton);
+                }
+            }, 100);
+        }, 150); // Small delay to ensure modal cleanup is complete
     }
 
     /**
@@ -2348,6 +2915,604 @@ class UIManager {
             before: { state: beforeState, element: beforeElement },
             after: { state: afterState, element: afterElement }
         };
+    }
+
+    /**
+     * Setup event handlers for no moves indicator
+     */
+    setupNoMovesIndicatorHandlers() {
+        // Draw stock button in no moves indicator
+        const drawStockBtn = document.getElementById('draw-stock-btn');
+        if (drawStockBtn) {
+            drawStockBtn.addEventListener('click', () => {
+                this.hideNoMovesIndicator();
+                this.handleStockClick();
+            });
+        }
+
+        // New game button in no moves indicator
+        const newGameBtn = document.getElementById('new-game-btn');
+        if (newGameBtn) {
+            newGameBtn.addEventListener('click', () => {
+                this.hideNoMovesIndicator();
+                this.startNewGame(this.gameState.difficulty);
+            });
+        }
+
+        // Close indicator when clicking outside of it
+        const noMovesIndicator = document.getElementById('no-moves-indicator');
+        if (noMovesIndicator) {
+            noMovesIndicator.addEventListener('click', (event) => {
+                if (event.target === noMovesIndicator) {
+                    this.hideNoMovesIndicator();
+                }
+            });
+        }
+
+        // Handle escape key to close indicator
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && this.isNoMovesIndicatorVisible()) {
+                this.hideNoMovesIndicator();
+            }
+        });
+    }
+
+    /**
+     * Check if there are no moves left and show indicator if needed
+     */
+    checkNoMovesLeft() {
+        // Only check during active gameplay
+        if (this.currentScreen !== 'game-screen' || this.gameState.gameWon || this.gameState.gameLost) {
+            console.log('Skipping move check - not in active gameplay:', {
+                currentScreen: this.currentScreen,
+                gameWon: this.gameState.gameWon,
+                gameLost: this.gameState.gameLost
+            });
+            return;
+        }
+
+        // Don't check if cards are selected (player is in middle of move)
+        if (this.selectedCards.length > 0) {
+            console.log('Skipping move check - cards are selected');
+            return;
+        }
+
+        // Use comprehensive move checking
+        console.log('=== CHECKING FOR AVAILABLE MOVES ===');
+        const hasMovesAvailable = this.checkForMoves();
+        console.log('=== MOVES AVAILABLE:', hasMovesAvailable, '===');
+        
+        if (!hasMovesAvailable) {
+            // No moves available - check if undo is possible
+            const canUndo = this.gameState.canUndo(this.difficultyManager);
+            console.log('=== NO MOVES AVAILABLE ===');
+            console.log('Can undo:', canUndo, 'Move history length:', this.gameState.moveHistory.length);
+            console.log('Actual moves made:', this.gameState.actualMovesMade);
+            console.log('Undo count:', this.gameState.undoCount);
+            
+            if (!canUndo) {
+                // Game is truly unwinnable - mark as lost and handle
+                console.log('=== GAME LOST - NO MOVES AND NO UNDO ===');
+                this.gameState.gameLost = true;
+                this.handleGameLoss();
+            } else {
+                // Moves unavailable but undo is possible - show hint about undo
+                console.log('=== NO MOVES BUT UNDO AVAILABLE ===');
+                this.showMessage('No moves available. Try using Undo or start a new game.', 4000);
+            }
+        } else {
+            console.log('=== MOVES ARE AVAILABLE - CONTINUING GAME ===');
+        }
+    }
+
+    /**
+     * Comprehensive check for any available moves in the current game state
+     * Based on systematic move preference order for solitaire
+     * Returns true if moves are available, false if no moves left
+     */
+    checkForMoves() {
+        // 1. Waste to foundation: Check if top waste card can go to foundation
+        if (this.checkWasteToFoundation()) {
+            return true;
+        }
+
+        // 2. Top of tableau to foundation: Check if any tableau top card can go to foundation
+        if (this.checkTableauToFoundation()) {
+            return true;
+        }
+
+        // 3. King-stack to empty tableau: Kings can move to empty tableaus
+        if (this.checkKingStackToEmptyTableau()) {
+            return true;
+        }
+
+        // 4. Non-king stack to eligible tableau: Face-up sequences between tableaus
+        if (this.checkNonKingStackToTableau()) {
+            return true;
+        }
+
+        // 5. King waste to empty tableau: King from waste to empty tableau
+        if (this.checkKingWasteToEmptyTableau()) {
+            return true;
+        }
+
+        // 6. Non-king waste to eligible tableau: Waste card to tableau
+        if (this.checkNonKingWasteToTableau()) {
+            return true;
+        }
+
+        // 7. Draw: Can draw from stock
+        if (this.checkCanDraw()) {
+            return true;
+        }
+
+        // 8. Reset: Can reset waste back to stock
+        if (this.checkCanReset()) {
+            return true;
+        }
+
+        // If we reach here, no moves are available
+        return false;
+    }
+
+    /**
+     * Check for moves involving stock and waste piles
+     */
+    checkStockWasteMoves() {
+        // If we can draw from stock, that's a move
+        if (this.gameState.stock.length > 0) {
+            return true;
+        }
+
+        // If waste pile is empty, no moves from it
+        if (this.gameState.waste.length === 0) {
+            return false;
+        }
+
+        const topWasteCard = this.gameState.waste[this.gameState.waste.length - 1];
+
+        // Check if top waste card can move to any foundation pile
+        for (let foundIndex = 0; foundIndex < 4; foundIndex++) {
+            if (topWasteCard.canPlaceOnFoundation(this.gameState.foundation[foundIndex])) {
+                return true;
+            }
+        }
+
+        // Check if top waste card can move to any tableau column
+        for (let col = 0; col < 7; col++) {
+            const column = this.gameState.tableau[col];
+            const targetCard = column.length > 0 ? column[column.length - 1] : null;
+            
+            if (topWasteCard.canPlaceOnTableau(targetCard)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check for moves from tableau to foundations
+     */
+    checkTableauToFoundationMoves() {
+        for (let col = 0; col < 7; col++) {
+            const column = this.gameState.tableau[col];
+            if (column.length === 0) continue;
+
+            const topCard = column[column.length - 1];
+            if (!topCard.faceUp) continue;
+
+            // Check if this card can move to any foundation pile
+            for (let foundIndex = 0; foundIndex < 4; foundIndex++) {
+                if (topCard.canPlaceOnFoundation(this.gameState.foundation[foundIndex])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check for moves within the tableau (sequences and Kings to empty columns)
+     */
+    checkTableauMoves() {
+        // First, find all empty columns for King placement
+        const emptyColumns = [];
+        for (let col = 0; col < 7; col++) {
+            if (this.gameState.tableau[col].length === 0) {
+                emptyColumns.push(col);
+            }
+        }
+
+        // Check moves for each tableau column
+        for (let fromCol = 0; fromCol < 7; fromCol++) {
+            const fromColumn = this.gameState.tableau[fromCol];
+            if (fromColumn.length === 0) continue;
+
+            // Find all possible movable sequences
+            for (let startIndex = 0; startIndex < fromColumn.length; startIndex++) {
+                const startCard = fromColumn[startIndex];
+                if (!startCard.faceUp) continue;
+
+                // Check if this card can start a movable sequence
+                if (!this.isValidSequenceStart(fromColumn, startIndex)) continue;
+
+                const movingCard = startCard;
+
+                // Check if this card/sequence can move to any other tableau column
+                for (let toCol = 0; toCol < 7; toCol++) {
+                    if (toCol === fromCol) continue;
+
+                    const toColumn = this.gameState.tableau[toCol];
+
+                    // Check for King to empty column
+                    if (toColumn.length === 0) {
+                        if (movingCard.rank === 13 && emptyColumns.includes(toCol)) {
+                            return true;
+                        }
+                    } else {
+                        // Check regular tableau placement
+                        const targetCard = toColumn[toColumn.length - 1];
+                        if (movingCard.canPlaceOnTableau(targetCard)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a card at a given position can start a valid movable sequence
+     */
+    isValidSequenceStart(column, startIndex) {
+        if (startIndex >= column.length) return false;
+
+        const startCard = column[startIndex];
+        if (!startCard.faceUp) return false;
+
+        // A card can start a sequence if:
+        // 1. It's face up, AND
+        // 2. All cards after it form a valid descending sequence with alternating colors
+
+        for (let i = startIndex; i < column.length - 1; i++) {
+            const currentCard = column[i];
+            const nextCard = column[i + 1];
+
+            if (!nextCard.faceUp) return false;
+            if (!nextCard.canPlaceOnTableau(currentCard)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 1. Waste to foundation: Check if top waste card can go to foundation
+     */
+    checkWasteToFoundation() {
+        if (this.gameState.waste.length === 0) return false;
+
+        const topWasteCard = this.gameState.waste[this.gameState.waste.length - 1];
+        
+        for (let foundIndex = 0; foundIndex < 4; foundIndex++) {
+            if (topWasteCard.canPlaceOnFoundation(this.gameState.foundation[foundIndex])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 2. Top of tableau to foundation: Check if any tableau top card can go to foundation  
+     */
+    checkTableauToFoundation() {
+        for (let col = 0; col < 7; col++) {
+            const column = this.gameState.tableau[col];
+            if (column.length === 0) continue;
+
+            const topCard = column[column.length - 1];
+            if (!topCard.faceUp) continue;
+
+            for (let foundIndex = 0; foundIndex < 4; foundIndex++) {
+                if (topCard.canPlaceOnFoundation(this.gameState.foundation[foundIndex])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 3. King-stack to empty tableau: Kings with face-up stacks can move to empty tableaus
+     */
+    checkKingStackToEmptyTableau() {
+        // Find empty tableaus
+        const emptyTableaus = [];
+        for (let col = 0; col < 7; col++) {
+            if (this.gameState.tableau[col].length === 0) {
+                emptyTableaus.push(col);
+            }
+        }
+
+        if (emptyTableaus.length === 0) return false;
+
+        // Check each tableau for movable King stacks
+        for (let col = 0; col < 7; col++) {
+            const column = this.gameState.tableau[col];
+            if (column.length <= 1) continue; // Need more than one card to move a stack
+
+            // Find the first face-up card
+            let firstFaceUpIndex = -1;
+            for (let i = 0; i < column.length; i++) {
+                if (column[i].faceUp) {
+                    firstFaceUpIndex = i;
+                    break;
+                }
+            }
+
+            // Check if the first face-up card is a King and we can move the stack
+            if (firstFaceUpIndex >= 0 && 
+                firstFaceUpIndex < column.length - 1 && // Must have cards after it to form a stack
+                column[firstFaceUpIndex].rank === 13) {
+                
+                // Verify the sequence is valid (descending, alternating colors)
+                if (this.isValidSequenceStart(column, firstFaceUpIndex)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 4. Non-king stack to eligible tableau: Face-up sequences between tableaus
+     */
+    checkNonKingStackToTableau() {
+        // Check each tableau column for movable sequences
+        for (let fromCol = 0; fromCol < 7; fromCol++) {
+            const fromColumn = this.gameState.tableau[fromCol];
+            if (fromColumn.length === 0) continue;
+
+            // Check each possible starting position for a movable sequence
+            for (let startIndex = 0; startIndex < fromColumn.length; startIndex++) {
+                const startCard = fromColumn[startIndex];
+                if (!startCard.faceUp) continue;
+                if (startCard.rank === 13) continue; // Skip Kings (handled separately)
+
+                // Check if this forms a valid sequence
+                if (!this.isValidSequenceStart(fromColumn, startIndex)) continue;
+
+                // Check if this sequence can move to any other tableau
+                for (let toCol = 0; toCol < 7; toCol++) {
+                    if (toCol === fromCol) continue;
+
+                    const toColumn = this.gameState.tableau[toCol];
+                    if (toColumn.length === 0) continue; // Empty columns handled separately
+
+                    const targetCard = toColumn[toColumn.length - 1];
+                    if (startCard.canPlaceOnTableau(targetCard)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 5. King waste to empty tableau: King from waste can go to empty tableau
+     */
+    checkKingWasteToEmptyTableau() {
+        if (this.gameState.waste.length === 0) return false;
+
+        const topWasteCard = this.gameState.waste[this.gameState.waste.length - 1];
+        if (topWasteCard.rank !== 13) return false; // Not a King
+
+        // Check if any tableau is empty
+        for (let col = 0; col < 7; col++) {
+            if (this.gameState.tableau[col].length === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 6. Non-king waste to eligible tableau: Waste card can go to tableau  
+     */
+    checkNonKingWasteToTableau() {
+        if (this.gameState.waste.length === 0) return false;
+
+        const topWasteCard = this.gameState.waste[this.gameState.waste.length - 1];
+        if (topWasteCard.rank === 13) return false; // Kings handled separately
+
+        // Check if waste card can go to any tableau
+        for (let col = 0; col < 7; col++) {
+            const column = this.gameState.tableau[col];
+            if (column.length === 0) continue; // Empty tableaus handled separately
+
+            const targetCard = column[column.length - 1];
+            if (topWasteCard.canPlaceOnTableau(targetCard)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 7. Draw: Can draw from stock
+     */
+    checkCanDraw() {
+        return this.gameState.stock.length > 0;
+    }
+
+    /**
+     * 8. Reset: Can reset waste back to stock (if stock is empty and waste has cards)
+     */
+    checkCanReset() {
+        return this.gameState.stock.length === 0 && this.gameState.waste.length > 0;
+    }
+
+    /**
+     * Show the no moves left indicator
+     */
+    showNoMovesIndicator() {
+        const indicator = document.getElementById('no-moves-indicator');
+        if (indicator) {
+            indicator.classList.remove('hidden');
+            
+            // Focus the first button for TV remote navigation
+            setTimeout(() => {
+                const firstBtn = indicator.querySelector('.control-btn');
+                if (firstBtn && this.tvRemote) {
+                    this.tvRemote.focusElement(firstBtn);
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Hide the no moves left indicator
+     */
+    hideNoMovesIndicator() {
+        const indicator = document.getElementById('no-moves-indicator');
+        if (indicator) {
+            indicator.classList.add('hidden');
+            
+            // Refresh TV remote focus
+            setTimeout(() => {
+                if (this.tvRemote) {
+                    this.tvRemote.refresh();
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Check if the no moves indicator is currently visible
+     */
+    isNoMovesIndicatorVisible() {
+        const indicator = document.getElementById('no-moves-indicator');
+        return indicator && !indicator.classList.contains('hidden');
+    }
+
+    /**
+     * Test function to simulate a no-moves scenario for debugging
+     * This function can be called from the browser console
+     */
+    testNoMovesScenario() {
+        console.log('=== TESTING NO MOVES SCENARIO ===');
+        
+        if (this.currentScreen !== 'game-screen') {
+            console.log('Not in game screen. Starting a new game...');
+            this.startNewGame('hard');
+            
+            // Wait a moment for the game to initialize
+            setTimeout(() => {
+                this.testNoMovesScenario();
+            }, 500);
+            return;
+        }
+        
+        console.log('Creating a test scenario with no moves available...');
+        
+        // Create a scenario where no moves are possible
+        // Clear all tableaus except for one card that can't move
+        for (let col = 0; col < 7; col++) {
+            this.gameState.tableau[col] = [];
+        }
+        
+        // Put a single black King in tableau[0] that can't go anywhere
+        if (typeof Card !== 'undefined') {
+            const blackKing = new Card(13, 'spades'); // King of Spades
+            blackKing.faceUp = true;
+            this.gameState.tableau[0] = [blackKing];
+            
+            // Put a red Queen in tableau[1] that can't accept the black King
+            const redQueen = new Card(12, 'hearts'); // Queen of Hearts  
+            redQueen.faceUp = true;
+            this.gameState.tableau[1] = [redQueen];
+        }
+        
+        // Clear stock and waste
+        this.gameState.stock = [];
+        this.gameState.waste = [];
+        
+        // Clear foundations 
+        this.gameState.foundation = [[], [], [], []];
+        
+        // Clear move history so undo isn't available
+        this.gameState.moveHistory = [];
+        this.gameState.actualMovesMade = 0;
+        this.gameState.undoCount = 0;
+        
+        // Ensure game isn't won or lost yet
+        this.gameState.gameWon = false;
+        this.gameState.gameLost = false;
+        
+        console.log('Test scenario created:');
+        console.log('- Tableau 0: King of Spades (black)');
+        console.log('- Tableau 1: Queen of Hearts (red)');
+        console.log('- All other areas empty');
+        console.log('- No undo available');
+        
+        // Re-render the game
+        this.renderGameBoard();
+        this.updateGameDisplay();
+        
+        console.log('Now triggering move check...');
+        
+        // Trigger the move check manually
+        setTimeout(() => {
+            this.checkNoMovesLeft();
+        }, 200);
+        
+        return 'Test scenario created - check console for results';
+    }
+
+    /**
+     * Test the move detection system directly
+     */
+    testMoveDetection() {
+        console.log('=== TESTING MOVE DETECTION SYSTEM ===');
+        
+        if (this.currentScreen !== 'game-screen') {
+            console.log('Not in game screen. Please start a game first.');
+            return;
+        }
+        
+        console.log('Current game state:');
+        console.log('Stock length:', this.gameState.stock.length);
+        console.log('Waste length:', this.gameState.waste.length);
+        console.log('Tableau lengths:', this.gameState.tableau.map(col => col.length));
+        console.log('Foundation lengths:', this.gameState.foundation.map(pile => pile.length));
+        
+        // Test each move detection function individually
+        console.log('\nTesting individual move detection functions:');
+        
+        const results = {
+            wasteToFoundation: this.checkWasteToFoundation(),
+            tableauToFoundation: this.checkTableauToFoundation(), 
+            kingStackToEmpty: this.checkKingStackToEmptyTableau(),
+            nonKingStackToTableau: this.checkNonKingStackToTableau(),
+            kingWasteToEmpty: this.checkKingWasteToEmptyTableau(),
+            nonKingWasteToTableau: this.checkNonKingWasteToTableau(),
+            canDraw: this.checkCanDraw(),
+            canReset: this.checkCanReset()
+        };
+        
+        console.log('Move detection results:', results);
+        
+        const overallResult = this.checkForMoves();
+        console.log('Overall moves available:', overallResult);
+        
+        const canUndo = this.gameState.canUndo(this.difficultyManager);
+        console.log('Can undo:', canUndo);
+        
+        return results;
     }
 
     /**

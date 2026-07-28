@@ -38,6 +38,8 @@ class GameState {
         // Game state flags
         this.gameWon = false; // Whether the player has won
         this.gameLost = false; // Whether the game is in an unwinnable state
+        this.gameAbandoned = false; // Whether the player abandoned the game (back button/give up)
+        this.gameEndTime = null; // When the game ended (for abandoned games)
         
         // Statistics tracking
         this.stockCycles = 0; // How many times the stock has been recycled
@@ -45,6 +47,8 @@ class GameState {
         
         // Undo functionality
         this.moveHistory = []; // History of moves for undo feature
+        this.undoCount = 0; // Number of undo operations performed
+        this.actualMovesMade = 0; // Actual gameplay moves (excludes initial state)
         
         // Auto-complete availability
         this.autoCompleteAvailable = false; // Whether auto-complete can be triggered
@@ -109,7 +113,7 @@ class GameState {
             this.recordMove({
                 type: 'recycle-stock',
                 stockCycles: this.stockCycles
-            });
+            }, true); // This is an actual gameplay move
         }
 
         // Draw the specified number of cards
@@ -123,7 +127,7 @@ class GameState {
         this.recordMove({
             type: 'draw-stock',
             count: cardsToDraw
-        });
+        }, true); // This is an actual gameplay move
 
         return true;
     }
@@ -147,18 +151,37 @@ class GameState {
             return false;
         }
 
-        // Get the cards to move
-        const cardsToMove = sourceCards.slice(-cardCount);
-        move.cards = cardsToMove.map(card => card.toJSON());
+        // Special handling for waste pile - can only move the top card (last card in array)
+        if (fromArea === 'waste') {
+            if (cardCount > 1) {
+                return false; // Can't move multiple cards from waste
+            }
+            // Get the top card (last in array)
+            const topCard = sourceCards[sourceCards.length - 1];
+            move.cards = [topCard.toJSON()];
+            
+            // Validate the move
+            if (!this.isValidMove([topCard], fromArea, toArea, targetCards, toIndex)) {
+                return false;
+            }
+            
+            // Remove only the top card, preserving order of remaining cards
+            sourceCards.pop();
+            targetCards.push(topCard);
+        } else {
+            // Standard handling for tableau and foundation
+            const cardsToMove = sourceCards.slice(-cardCount);
+            move.cards = cardsToMove.map(card => card.toJSON());
 
-        // Validate the move
-        if (!this.isValidMove(cardsToMove, fromArea, toArea, targetCards, toIndex)) {
-            return false;
+            // Validate the move
+            if (!this.isValidMove(cardsToMove, fromArea, toArea, targetCards, toIndex)) {
+                return false;
+            }
+
+            // Execute the move
+            sourceCards.splice(-cardCount, cardCount);
+            targetCards.push(...cardsToMove);
         }
-
-        // Execute the move
-        sourceCards.splice(-cardCount, cardCount);
-        targetCards.push(...cardsToMove);
 
         // Check if we need to flip a card in the source tableau column
         if (fromArea === 'tableau' && sourceCards.length > 0) {
@@ -178,7 +201,8 @@ class GameState {
         }
 
         this.moves++;
-        this.recordMove(move);
+        this.actualMovesMade++;
+        this.recordMove(move, true); // This is an actual gameplay move
         this.checkWinCondition();
         this.checkAutoComplete();
 
@@ -384,12 +408,18 @@ class GameState {
     /**
      * Record a move in the history for undo functionality
      */
-    recordMove(move) {
+    recordMove(move, isActualMove = false) {
         this.moveHistory.push({
             ...move,
             timestamp: Date.now(),
-            gameState: this.createSnapshot()
+            gameState: this.createSnapshot(),
+            isActualMove: isActualMove
         });
+
+        // Track actual moves separately (for undo availability)
+        if (isActualMove) {
+            this.actualMovesMade++;
+        }
 
         // Limit history size to prevent memory issues
         if (this.moveHistory.length > 100) {
@@ -401,11 +431,46 @@ class GameState {
      * Undo the last move
      */
     undoLastMove() {
-        if (this.moveHistory.length === 0) return false;
+        // Find the last actual move (skip initial state)
+        let lastActualMoveIndex = -1;
+        for (let i = this.moveHistory.length - 1; i >= 0; i--) {
+            if (this.moveHistory[i].isActualMove) {
+                lastActualMoveIndex = i;
+                break;
+            }
+        }
 
-        const lastMove = this.moveHistory.pop();
-        this.restoreSnapshot(lastMove.gameState);
+        if (lastActualMoveIndex === -1) return false; // No actual moves to undo
+
+        // Restore to the state before the last actual move
+        const targetStateIndex = lastActualMoveIndex - 1;
+        if (targetStateIndex < 0) return false; // Cannot undo further
+
+        const targetMove = this.moveHistory[targetStateIndex];
+        this.restoreSnapshot(targetMove.gameState);
+        
+        // Remove all moves after the target state
+        this.moveHistory.splice(targetStateIndex + 1);
+        
+        // Track undo usage
+        this.undoCount++;
+        this.actualMovesMade = Math.max(0, this.actualMovesMade - 1);
         this.moves++; // Undo counts as a move
+        
+        return true;
+    }
+
+    /**
+     * Check if undo is available (has actual moves and within limits)
+     */
+    canUndo(difficultyManager) {
+        // Must have actual moves made (not just initial state)
+        if (this.actualMovesMade === 0) return false;
+        
+        // Check difficulty limits
+        if (difficultyManager) {
+            return difficultyManager.canUndo(this.undoCount);
+        }
         
         return true;
     }
@@ -486,6 +551,8 @@ class GameState {
             endTime: this.endTime,
             gameWon: this.gameWon,
             gameLost: this.gameLost,
+            gameAbandoned: this.gameAbandoned,
+            gameEndTime: this.gameEndTime,
             stockCycles: this.stockCycles,
             emptyColumnsCreated: this.emptyColumnsCreated,
             autoCompleteAvailable: this.autoCompleteAvailable
@@ -510,6 +577,8 @@ class GameState {
         gameState.endTime = data.endTime;
         gameState.gameWon = data.gameWon;
         gameState.gameLost = data.gameLost;
+        gameState.gameAbandoned = data.gameAbandoned || false;
+        gameState.gameEndTime = data.gameEndTime || null;
         gameState.stockCycles = data.stockCycles;
         gameState.emptyColumnsCreated = data.emptyColumnsCreated;
         gameState.autoCompleteAvailable = data.autoCompleteAvailable;
