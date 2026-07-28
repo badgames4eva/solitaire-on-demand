@@ -3,11 +3,16 @@
  * Handles caching, offline functionality, and background sync
  */
 
-const CACHE_NAME = 'solitaire-on-demand-v1.0.0';
-const STATIC_CACHE_NAME = 'solitaire-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'solitaire-dynamic-v1.0.0';
+// Bump this version on every deploy. A service worker keeps serving its cached
+// copy until the cache name changes, so returning (PWA-installed) players would
+// otherwise be stuck on the old build indefinitely. Changing the version makes
+// the activate handler below delete the stale caches and refetch STATIC_FILES.
+const CACHE_NAME = 'solitaire-on-demand-v1.1.0';
+const STATIC_CACHE_NAME = 'solitaire-static-v1.1.0';
+const DYNAMIC_CACHE_NAME = 'solitaire-dynamic-v1.1.0';
 
-// Files to cache for offline functionality
+// Files to cache for offline functionality. Keep in sync with the <script>/<link>
+// tags in index.html — a file loaded there but missing here fails offline.
 const STATIC_FILES = [
     './',
     './index.html',
@@ -18,6 +23,8 @@ const STATIC_FILES = [
     './js/game-state.js',
     './js/tv-remote.js',
     './js/difficulty.js',
+    './js/sound-manager.js',
+    './js/ads.js',
     './js/ui.js',
     './js/game.js',
     './js/app.js'

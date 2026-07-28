@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solitaire on Demand — logic tests</title>
+  <style>
+    body { font: 15px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+      margin: 2rem auto; max-width: 44rem; color: #14172a; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    #summary { font-size: 1.1rem; font-weight: 600; padding: .6rem .9rem;
+      border-radius: 8px; margin: 1rem 0; }
+    .pass { background: #e6f5ea; color: #1b7a3d; }
+    .fail { background: #fdecec; color: #b3261e; }
+    ul { list-style: none; padding: 0; }
+    li { padding: .25rem 0; border-bottom: 1px solid #eef0f5; }
+    li.ok::before  { content: "✓ "; color: #1b7a3d; font-weight: 700; }
+    li.bad::before { content: "✗ "; color: #b3261e; font-weight: 700; }
+    .err { color: #b3261e; font-family: ui-monospace, monospace; font-size: .85rem;
+      margin-left: 1.2rem; }
+    p.note { color: #5b6480; }
+  </style>
+</head>
+<body>
+  <h1>Solitaire on Demand — logic tests</h1>
+  <p class="note">Same assertions as <code>node run-tests.js</code>, run against the
+    real <code>js/</code> classes. Scope is the pure card/deck/difficulty rule
+    logic; DOM, remote, and sound are a manual check on the device.</p>
+
+  <div id="summary">Running…</div>
+  <ul id="list"></ul>
+
+  <!-- Load only the pure-logic classes the tests exercise (same set the node
+       runner loads), in dependency order: Card before Deck. -->
+  <script src="js/card.js"></script>
+  <script src="js/deck.js"></script>
+  <script src="js/difficulty.js"></script>
+  <script src="tests.js"></script>
+  <script>
+    (function () {
+      const r = window.SOLITAIRE_TEST_RESULTS || { total: 0, passed: 0, failed: 1, results: [] };
+      const summary = document.getElementById("summary");
+      summary.textContent = r.failed === 0
+        ? `${r.passed}/${r.total} passed — all green`
+        : `${r.passed}/${r.total} passed, ${r.failed} FAILED`;
+      summary.className = r.failed === 0 ? "pass" : "fail";
+      const list = document.getElementById("list");
+      for (const t of r.results) {
+        const li = document.createElement("li");
+        li.className = t.ok ? "ok" : "bad";
+        li.textContent = t.name;
+        if (!t.ok) {
+          const e = document.createElement("div");
+          e.className = "err";
+          e.textContent = t.err;
+          li.appendChild(e);
+        }
+        list.appendChild(li);
+      }
+    })();
+  </script>
+</body>
+</html>

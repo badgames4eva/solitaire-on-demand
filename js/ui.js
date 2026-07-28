@@ -667,6 +667,17 @@ class UIManager {
         try {
             console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
             
+            // Support (voluntary ad) screen: end the ad cleanly (cancels its
+            // timers via ads.js resume()) and drop back to the menu. Do this
+            // before the generic history pop so no countdown keeps running.
+            if (this.currentScreen === 'support-ad-screen') {
+                if (typeof playSupportAd === 'function' && typeof playSupportAd._resume === 'function') {
+                    playSupportAd._resume();
+                } else {
+                    this.showScreen('main-menu');
+                }
+                return;
+            }
             // Special case: game screen - ALWAYS show confirmation dialog to prevent accidental game loss
             if (this.currentScreen === 'game-screen') {
                 console.log('Back button pressed in game - showing leave game confirmation');
@@ -1268,6 +1279,9 @@ class UIManager {
                 break;
             case 'give-up':
                 this.handleGiveUp();
+                break;
+            case 'support':
+                this.playSupportAd();
                 break;
             case 'exit':
                 this.handleAppExit();
@@ -2198,6 +2212,27 @@ class UIManager {
     handleGiveUp() {
         // Show styled confirmation dialog matching the exit confirmation
         this.showGiveUpConfirmation();
+    }
+
+    /**
+     * Play the voluntary "Support the Game" ad, then return to the main menu.
+     * The ad logic lives in js/ads.js (the ad seam); this just hands it the
+     * showScreen/soundManager it needs. Guarded so a build without ads.js loaded
+     * simply does nothing rather than throwing.
+     */
+    playSupportAd() {
+        if (typeof playSupportAd !== 'function') {
+            console.warn('Support ad seam (js/ads.js) not loaded');
+            return;
+        }
+        playSupportAd(
+            {
+                showScreen: (id) => this.showScreen(id),
+                returnTo: 'main-menu',
+                soundManager: this.soundManager,
+            },
+            () => this.showScreen('main-menu')
+        );
     }
 
     /**

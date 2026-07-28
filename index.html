@@ -38,6 +38,9 @@
                 <button class="menu-btn focusable" data-action="new-game" data-difficulty="hard">Hard Game</button>
                 <button class="menu-btn focusable" data-action="stats">Statistics</button>
                 <button class="menu-btn focusable" data-action="settings"  style="display: none;">Settings</button>
+                <!-- Voluntary ad: the ONLY ad in the app, and the player opts in by
+                     choosing it. Nothing forces an ad mid-game or on launch. -->
+                <button class="menu-btn focusable" data-action="support">❤ Support the Game</button>
                 <button class="menu-btn focusable" data-action="exit" style="background-color: #d32f2f; color: white;">Exit</button>
             </div>
             
@@ -218,6 +221,28 @@
             <button class="menu-btn focusable" data-action="back-to-menu">Back to Menu</button>
         </div>
 
+        <!-- SUPPORT (VOLUNTARY AD) SCREEN -->
+        <!-- Reached only from the main menu's "Support the Game" button. Plays one
+             short opt-in ad, then reveals a focusable Continue button. See js/ads.js;
+             this is a .screen so the D-pad focus, back-history, and showScreen()
+             machinery all apply for free. -->
+        <div id="support-ad-screen" class="screen">
+            <h2>Thanks for supporting the game</h2>
+            <p class="support-ad-note">Watching a short ad helps keep Solitaire on Demand
+                free. You chose this — the game never interrupts your play with ads.</p>
+            <div class="support-ad-box">
+                <div class="support-ad-fake">Your ad plays here</div>
+                <div class="support-ad-progress">
+                    <div class="support-ad-progress-bar" id="support-ad-bar"></div>
+                </div>
+                <p class="support-ad-count">Continues in <span id="support-ad-count">15</span>…</p>
+            </div>
+            <p class="support-ad-thanks" id="support-ad-thanks" hidden>You're the best. ❤</p>
+            <!-- Revealed when the ad finishes (or as a D-pad safety net if a real
+                 creative ever freezes). data-action gives a second path to leave. -->
+            <button class="menu-btn focusable" id="support-ad-continue" data-action="back-to-menu" hidden>Continue</button>
+        </div>
+
         <!-- GAME OVER MODAL -->
         <!-- Overlay dialog shown when game is completed (won or lost) -->
         <!-- Hidden by default, shown with 'active' class -->
@@ -254,6 +279,7 @@
     <script src="js/tv-remote.js"></script>   <!-- TVRemoteHandler class: Fire TV remote and keyboard navigation -->
     <script src="js/difficulty.js"></script>  <!-- DifficultyManager class: game difficulty settings and scoring -->
     <script src="js/sound-manager.js"></script> <!-- SoundManager class: audio effects and feedback -->
+    <script src="js/ads.js"></script>          <!-- Ad seam: the voluntary "Support the Game" ad (see file header) -->
     <script src="js/ui.js"></script>          <!-- UIManager class: user interface and DOM manipulation -->
     <script src="js/game.js"></script>        <!-- Game class: main game logic and rule enforcement -->
     <script src="js/app.js"></script>         <!-- App initialization and global coordination -->

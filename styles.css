@@ -1201,3 +1201,62 @@ body.tv-remote-mode .control-btn.focused::before {
     font-size: 0.7rem;
     opacity: 0.8;
 }
+
+/* ---------------------------------------------------------------------------
+   Support (voluntary ad) screen — see js/ads.js and #support-ad-screen.
+   Reuses the app's green/gold palette; 10-foot sized like the rest of the UI.
+--------------------------------------------------------------------------- */
+#support-ad-screen {
+    text-align: center;
+}
+.support-ad-note {
+    max-width: 40rem;
+    margin: 0 auto 1.5rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+.support-ad-box {
+    max-width: 40rem;
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid #4CAF50;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+.support-ad-fake {
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+.support-ad-progress {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.support-ad-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #ffdd44;
+    transition: width 0.1s linear;
+}
+.support-ad-count {
+    margin: 0.75rem 0 0;
+    color: rgba(255, 255, 255, 0.85);
+}
+.support-ad-thanks {
+    margin-top: 1.25rem;
+    font-size: 1.3rem;
+    color: #ffdd44;
+    font-weight: 600;
+}
+#support-ad-continue {
+    margin-top: 1.5rem;
+}

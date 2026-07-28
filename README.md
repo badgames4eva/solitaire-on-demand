@@ -97,7 +97,10 @@ solitaire-on-demand/
 ├── styles.css              # All CSS styles
 ├── manifest.json           # PWA manifest
 ├── manifest.toml           # Fire TV manifest
-├── sw.js                   # Service worker
+├── sw.js                   # Service worker (bump the cache version on each deploy)
+├── run-tests.js            # Headless logic-test runner (the push gate)
+├── tests.js                # The assertions (shared by node + browser)
+├── tests.html              # Browser green/red readout of the same tests
 ├── README.md               # This file
 └── js/
     ├── card.js             # Card class
@@ -105,10 +108,36 @@ solitaire-on-demand/
     ├── game-state.js       # Game state management
     ├── difficulty.js       # Difficulty and hint systems
     ├── tv-remote.js        # TV remote handler
+    ├── sound-manager.js    # Audio feedback
+    ├── ads.js              # Ad seam — the voluntary "Support the Game" ad
     ├── ui.js               # UI management
     ├── game.js             # Main game controller
     └── app.js              # Application entry point
 ```
+
+## Tests
+
+Framework-free logic tests for the pure card/deck/difficulty rules — no build
+step, same setup as the sibling `words_on_demand` repo. Run either way:
+
+```bash
+node run-tests.js        # headless, exits non-zero on failure — run before pushing
+```
+
+…or open `tests.html` in a browser for a green/red readout. Both run the same
+assertions in `tests.js` against the real `js/` classes. Scope is deliberately
+the rule logic (legal moves, deck integrity, difficulty settings); the DOM,
+remote, and sound code need a live device and stay a manual check.
+
+## Ads (voluntary only)
+
+The only ad is opt-in: the **Support the Game** button on the main menu plays one
+short ad the player chooses to watch. Nothing forces an ad mid-game, between
+deals, or on launch. The whole integration is a single seam in `js/ads.js` —
+today it shows a placeholder countdown, and setting `AD_CONFIG.vastTag` (plus
+loading an IMA HTML5 SDK) switches it to a real Google Ad Manager creative with
+no other code change. See the sibling repo's `ADS_SETUP.md` for the account
+setup and the `&npa=1` non-personalized-ads requirement.
 
 ## Browser Compatibility
 
