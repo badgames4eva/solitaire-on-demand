@@ -1208,21 +1208,29 @@ body.tv-remote-mode .control-btn.focused::before {
 --------------------------------------------------------------------------- */
 #support-ad-screen {
     text-align: center;
+    padding: 2rem;
+}
+#support-ad-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
 }
 .support-ad-note {
-    max-width: 40rem;
-    margin: 0 auto 1.5rem;
+    max-width: 55rem;
+    margin: 0 auto 2rem;
     color: rgba(255, 255, 255, 0.85);
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     line-height: 1.5;
 }
+/* Box width is viewport-relative so the ad fills a meaningful share of a TV
+   screen instead of sitting as a narrow desktop-width column. Capped so it
+   can't overrun an ultra-wide display. */
 .support-ad-box {
-    max-width: 40rem;
+    width: min(60vw, 900px);
     margin: 0 auto;
     background: rgba(0, 0, 0, 0.25);
-    border: 2px solid #4CAF50;
-    border-radius: 12px;
-    padding: 1.5rem;
+    border: 3px solid #4CAF50;
+    border-radius: 16px;
+    padding: 2rem;
 }
 .support-ad-fake {
     aspect-ratio: 16 / 9;
@@ -1230,15 +1238,15 @@ body.tv-remote-mode .control-btn.focused::before {
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
-    border-radius: 8px;
+    border-radius: 10px;
     color: rgba(255, 255, 255, 0.6);
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
+    font-size: 1.6rem;
+    margin-bottom: 1.5rem;
 }
 .support-ad-progress {
-    height: 10px;
+    height: 16px;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
+    border-radius: 8px;
     overflow: hidden;
 }
 .support-ad-progress-bar {
@@ -1248,15 +1256,38 @@ body.tv-remote-mode .control-btn.focused::before {
     transition: width 0.1s linear;
 }
 .support-ad-count {
-    margin: 0.75rem 0 0;
+    margin: 1rem 0 0;
+    font-size: 1.3rem;
     color: rgba(255, 255, 255, 0.85);
 }
 .support-ad-thanks {
-    margin-top: 1.25rem;
-    font-size: 1.3rem;
+    margin-top: 1.5rem;
+    font-size: 1.6rem;
     color: #ffdd44;
     font-weight: 600;
 }
 #support-ad-continue {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* TV breakpoints — the rest of the app bumps its type/controls up for 1080p and
+   4K screens (see the .menu-btn / #main-menu h1 overrides above), so the support
+   screen has to do the same or it renders desktop-tiny on a TV. */
+@media (min-width: 1920px) and (max-width: 2559px) {
+    #support-ad-screen h2 { font-size: 3rem; }
+    .support-ad-note { font-size: 1.8rem; max-width: 70rem; }
+    .support-ad-box { width: min(60vw, 1100px); padding: 2.5rem; }
+    .support-ad-fake { font-size: 2.2rem; }
+    .support-ad-progress { height: 20px; }
+    .support-ad-count { font-size: 1.8rem; }
+    .support-ad-thanks { font-size: 2.2rem; }
+}
+@media (min-width: 2560px) {
+    #support-ad-screen h2 { font-size: 4rem; }
+    .support-ad-note { font-size: 2.4rem; max-width: 90rem; }
+    .support-ad-box { width: min(60vw, 1500px); padding: 3rem; border-width: 4px; }
+    .support-ad-fake { font-size: 3rem; }
+    .support-ad-progress { height: 28px; }
+    .support-ad-count { font-size: 2.4rem; }
+    .support-ad-thanks { font-size: 3rem; }
 }
