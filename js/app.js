@@ -14,10 +14,15 @@ let solitaireGame = null;
 function initializeApp() {
     console.log('Initializing Solitaire On Demand...');
     
+    // Expose the native BACK bridge first, before anything that can throw.
+    // If init fails the wrapper still gets a synchronous answer instead of
+    // waiting out its 400ms timeout on every Back press.
+    setupNativeBridge();
+
     try {
         // Load and display version from manifest
         loadVersionFromManifest();
-        
+
         // Create the main game instance which coordinates all other systems
         solitaireGame = new SolitaireGame();
         
@@ -32,7 +37,7 @@ function initializeApp() {
         
         // Setup Fire TV remote button handlers
         setupTVRemoteHandlers();
-        
+
         // Setup debug panel for Fire TV remote testing
         setupDebugPanel();
         
@@ -173,6 +178,99 @@ function setupTVRemoteHandlers() {
     });
     
     console.log('Fire TV remote handlers initialized with standard keydown events and Android KeyEvent support');
+}
+
+/**
+ * Expose window.SolitaireNative for the Fire OS / Android TV wrapper.
+ *
+ * Why this exists: the native Activity consumes KEYCODE_BACK in its back
+ * dispatcher, so the physical remote's Back button never arrives here as a
+ * keydown. Instead the wrapper calls SolitaireNative.onBack() and reads the
+ * return value to decide what to do:
+ *
+ *   true  -> the page consumed Back (closed a modal / went back a screen /
+ *            raised its own confirmation). Native does nothing.
+ *   false -> the page has nothing to go back to. Native shows its exit dialog.
+ *
+ * This MUST stay synchronous — the wrapper reads the value the call returns,
+ * so a promise or a later callback would read as "not handled".
+ */
+function setupNativeBridge() {
+    window.SolitaireNative = {
+        onBack() {
+            try {
+                const ui = solitaireGame?.uiManager;
+                if (!ui) {
+                    // Still booting; let native own the press.
+                    return false;
+                }
+
+                // An open modal owns Back: dismiss it and stay in the app.
+                //
+                // Resolved by convention rather than a hardcoded id->method map,
+                // so a modal added later works with no change here. In order:
+                // the modal's own _cleanup-style dismiss, then its "safe" button
+                // (the one that keeps you where you are), then a plain hide.
+                //
+                // Deliberately NOT done by dispatching 'tvback': that event also
+                // reaches the global listener that routes to handleBackButton,
+                // which would navigate a screen *behind* the modal
+                // (stopPropagation doesn't stop same-node listeners — see the
+                // lastBackAt note in ui.js).
+                const openModal = document.querySelector('.modal.active');
+                if (openModal) {
+                    // The safe/cancel button, by the data-action convention these
+                    // modals already use. Clicking it runs whatever teardown the
+                    // modal defined for itself.
+                    //
+                    // 'back-to-menu' is the safe action on the game-over modal,
+                    // which has no stay/continue/cancel button (the game is
+                    // already over, so there's nothing to stay in). Without it
+                    // Back fell through to the generic hide below and left the
+                    // player on a finished, unplayable board.
+                    const safeButton = openModal.querySelector(
+                        '[data-action="stay"], [data-action="continue"], ' +
+                        '[data-action="cancel"], [data-action="back-to-menu"]'
+                    );
+                    if (safeButton) {
+                        safeButton.click();
+                    } else {
+                        openModal.classList.remove('active');
+                        if (typeof openModal._cleanup === 'function') {
+                            openModal._cleanup();
+                        }
+                        if (Array.isArray(openModal._modalCleanup)) {
+                            openModal._modalCleanup.forEach(fn => fn());
+                        }
+                    }
+                    return true;
+                }
+
+                // On the main menu there's nowhere left to go — hand off to the
+                // native exit dialog instead of raising a second, web-side one.
+                if (ui.currentScreen === 'main-menu') {
+                    return false;
+                }
+
+                // Any other screen: normal back navigation (this also raises the
+                // "leave game?" confirmation on the game screen).
+                //
+                // Clear the duplicate-press guard first. It's there to collapse
+                // one keydown arriving at several listeners, but native consumes
+                // KEYCODE_BACK so this call is the only delivery — leaving the
+                // guard set would swallow a deliberate fast double-press while
+                // still reporting true, which reads as a dead Back button.
+                ui.lastBackAt = 0;
+                ui.handleBackButton();
+                return true;
+            } catch (error) {
+                console.error('SolitaireNative.onBack failed:', error);
+                return false;
+            }
+        }
+    };
+
+    console.log('Native bridge (window.SolitaireNative) installed');
 }
 
 /**
