@@ -512,171 +512,16 @@ function setupServiceWorker() {
             navigator.serviceWorker.register('./sw.js')
                 .then((registration) => {
                     console.log('Service Worker registered successfully:', registration.scope);
-                    
-                    // Check for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // New version available
-                                showUpdateNotification();
-                            }
-                        });
-                    });
+                    // No update prompt: this is a hosted web app. A reload always
+                    // fetches the newest files, and the SW's activate handler swaps
+                    // to the new cache on the next load — so an "update available"
+                    // banner would just interrupt to ask permission for something
+                    // that already happens for free.
                 })
                 .catch((error) => {
                     console.log('Service Worker registration failed:', error);
                 });
         });
-    }
-}
-
-/**
- * Show update notification
- */
-function showUpdateNotification() {
-    // Don't stack prompts if the SW reports an update more than once.
-    const existing = document.getElementById('update-banner');
-    if (existing) {
-        if (existing._cleanup) existing._cleanup();
-        existing.remove();
-    }
-
-    // A centered modal, not a top banner. This lives on document.body, OUTSIDE
-    // any .screen — and the TV remote's focus scan only accepts .focusable
-    // elements inside .screen.active, so a body-level element can never join
-    // that list. It therefore owns its own D-pad handling, the same way the
-    // exit-confirmation modal in ui.js does. (The old version had mouse-only
-    // onclick handlers, making it unreachable by remote.)
-    const updateBanner = document.createElement('div');
-    updateBanner.id = 'update-banner';
-    updateBanner.className = 'modal active';
-    updateBanner.style.zIndex = '6000';
-
-    updateBanner.innerHTML = `
-        <div class="modal-content" style="text-align: center; padding: 3rem; max-width: 900px;">
-            <h2 style="margin-bottom: 1rem; color: #ffdd44; font-size: 2.5rem;">A new version is available</h2>
-            <p style="margin-bottom: 2rem; font-size: 1.5rem; line-height: 1.5;">
-                Update now to get the latest Solitaire on Demand.
-            </p>
-            <div class="modal-buttons" style="display: flex; gap: 1.5rem; justify-content: center;">
-                <button id="update-now-btn" class="modal-btn focusable"
-                        style="padding: 1.25rem 2.5rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.5rem;">
-                    Update Now
-                </button>
-                <button id="update-later-btn" class="modal-btn focusable"
-                        style="padding: 1.25rem 2.5rem; background: transparent; color: white; border: 2px solid white; border-radius: 8px; font-size: 1.5rem;">
-                    Later
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(updateBanner);
-
-    const buttons = [
-        updateBanner.querySelector('#update-now-btn'),
-        updateBanner.querySelector('#update-later-btn'),
-    ];
-    let current = 0;
-
-    const paint = () => {
-        buttons.forEach((b, i) => b.classList.toggle('focused', i === current));
-        buttons[current].focus();
-    };
-
-    buttons[0].addEventListener('click', reloadApp);
-    buttons[1].addEventListener('click', dismissUpdate);
-
-    // Capture-phase handler so the prompt gets keys before the game's own
-    // listeners, and nothing leaks through to the board behind it.
-    const onKeydown = (event) => {
-        const key = event.key;
-        const code = event.keyCode;
-        let handled = true;
-
-        // Left/Up (Android KEYCODE_DPAD_LEFT=21, UP=19)
-        if (key === 'ArrowLeft' || key === 'ArrowUp' || code === 21 || code === 19) {
-            current = current > 0 ? current - 1 : buttons.length - 1;
-            paint();
-        }
-        // Right/Down/Tab (RIGHT=22, DOWN=20)
-        else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || code === 22 || code === 20) {
-            current = current < buttons.length - 1 ? current + 1 : 0;
-            paint();
-        }
-        // Select (DPAD_CENTER=23, BUTTON_A=96)
-        else if (key === 'Enter' || key === ' ' || code === 23 || code === 96) {
-            buttons[current].click();
-        }
-        // Back dismisses = "Later" (BACK=4, ESCAPE=27)
-        else if (key === 'Escape' || code === 4 || code === 27) {
-            dismissUpdate();
-        } else {
-            handled = false;
-        }
-
-        if (handled) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    };
-
-    // Fire TV Back can also arrive as the app's custom 'tvback' event.
-    const onTvBack = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        dismissUpdate();
-    };
-
-    document.addEventListener('keydown', onKeydown, true);
-    document.addEventListener('tvback', onTvBack, true);
-
-    updateBanner._cleanup = () => {
-        document.removeEventListener('keydown', onKeydown, true);
-        document.removeEventListener('tvback', onTvBack, true);
-    };
-
-    // Default to "Update Now"; give the DOM a beat to lay out first.
-    setTimeout(paint, 100);
-}
-
-/**
- * Reload the app to get the latest version
- */
-function reloadApp() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-            registrations.forEach((registration) => {
-                registration.update();
-            });
-        });
-    }
-    
-    // Continue game functionality disabled - no need to save state
-    // if (solitaireGame) {
-    //     solitaireGame.saveGameState();
-    // }
-    
-    window.location.reload();
-}
-
-/**
- * Dismiss update notification
- */
-function dismissUpdate() {
-    const banner = document.getElementById('update-banner');
-    if (banner) {
-        // Remove the capture-phase key listeners, or they'd keep swallowing
-        // D-pad input after the prompt is gone.
-        if (banner._cleanup) banner._cleanup();
-        banner.remove();
-    }
-
-    // Hand D-pad focus back to whatever screen is underneath, otherwise the
-    // remote is left pointing at a detached button and Select does nothing.
-    if (solitaireGame?.tvRemote) {
-        setTimeout(() => solitaireGame.tvRemote.refresh(), 100);
     }
 }
 
@@ -855,7 +700,5 @@ if (document.readyState === 'loading') {
 }
 
 // Make functions globally available
-window.reloadApp = reloadApp;
-window.dismissUpdate = dismissUpdate;
 window.toggleDebugPanel = toggleDebugPanel;
 window.clearDebugLog = clearDebugLog;
