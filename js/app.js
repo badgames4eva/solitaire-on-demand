@@ -535,32 +535,110 @@ function setupServiceWorker() {
  * Show update notification
  */
 function showUpdateNotification() {
+    // Don't stack prompts if the SW reports an update more than once.
+    const existing = document.getElementById('update-banner');
+    if (existing) {
+        if (existing._cleanup) existing._cleanup();
+        existing.remove();
+    }
+
+    // A centered modal, not a top banner. This lives on document.body, OUTSIDE
+    // any .screen — and the TV remote's focus scan only accepts .focusable
+    // elements inside .screen.active, so a body-level element can never join
+    // that list. It therefore owns its own D-pad handling, the same way the
+    // exit-confirmation modal in ui.js does. (The old version had mouse-only
+    // onclick handlers, making it unreachable by remote.)
     const updateBanner = document.createElement('div');
     updateBanner.id = 'update-banner';
-    updateBanner.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: #2196F3;
-        color: white;
-        padding: 1rem;
-        text-align: center;
-        z-index: 5000;
-        font-size: 0.9rem;
-    `;
-    
+    updateBanner.className = 'modal active';
+    updateBanner.style.zIndex = '6000';
+
     updateBanner.innerHTML = `
-        <span>A new version is available!</span>
-        <button onclick="reloadApp()" style="margin-left: 1rem; padding: 0.5rem 1rem; background: white; color: #2196F3; border: none; border-radius: 4px; cursor: pointer;">
-            Update Now
-        </button>
-        <button onclick="dismissUpdate()" style="margin-left: 0.5rem; padding: 0.5rem 1rem; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer;">
-            Later
-        </button>
+        <div class="modal-content" style="text-align: center; padding: 3rem; max-width: 900px;">
+            <h2 style="margin-bottom: 1rem; color: #ffdd44; font-size: 2.5rem;">A new version is available</h2>
+            <p style="margin-bottom: 2rem; font-size: 1.5rem; line-height: 1.5;">
+                Update now to get the latest Solitaire on Demand.
+            </p>
+            <div class="modal-buttons" style="display: flex; gap: 1.5rem; justify-content: center;">
+                <button id="update-now-btn" class="modal-btn focusable"
+                        style="padding: 1.25rem 2.5rem; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 1.5rem;">
+                    Update Now
+                </button>
+                <button id="update-later-btn" class="modal-btn focusable"
+                        style="padding: 1.25rem 2.5rem; background: transparent; color: white; border: 2px solid white; border-radius: 8px; font-size: 1.5rem;">
+                    Later
+                </button>
+            </div>
+        </div>
     `;
-    
+
     document.body.appendChild(updateBanner);
+
+    const buttons = [
+        updateBanner.querySelector('#update-now-btn'),
+        updateBanner.querySelector('#update-later-btn'),
+    ];
+    let current = 0;
+
+    const paint = () => {
+        buttons.forEach((b, i) => b.classList.toggle('focused', i === current));
+        buttons[current].focus();
+    };
+
+    buttons[0].addEventListener('click', reloadApp);
+    buttons[1].addEventListener('click', dismissUpdate);
+
+    // Capture-phase handler so the prompt gets keys before the game's own
+    // listeners, and nothing leaks through to the board behind it.
+    const onKeydown = (event) => {
+        const key = event.key;
+        const code = event.keyCode;
+        let handled = true;
+
+        // Left/Up (Android KEYCODE_DPAD_LEFT=21, UP=19)
+        if (key === 'ArrowLeft' || key === 'ArrowUp' || code === 21 || code === 19) {
+            current = current > 0 ? current - 1 : buttons.length - 1;
+            paint();
+        }
+        // Right/Down/Tab (RIGHT=22, DOWN=20)
+        else if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'Tab' || code === 22 || code === 20) {
+            current = current < buttons.length - 1 ? current + 1 : 0;
+            paint();
+        }
+        // Select (DPAD_CENTER=23, BUTTON_A=96)
+        else if (key === 'Enter' || key === ' ' || code === 23 || code === 96) {
+            buttons[current].click();
+        }
+        // Back dismisses = "Later" (BACK=4, ESCAPE=27)
+        else if (key === 'Escape' || code === 4 || code === 27) {
+            dismissUpdate();
+        } else {
+            handled = false;
+        }
+
+        if (handled) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    };
+
+    // Fire TV Back can also arrive as the app's custom 'tvback' event.
+    const onTvBack = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dismissUpdate();
+    };
+
+    document.addEventListener('keydown', onKeydown, true);
+    document.addEventListener('tvback', onTvBack, true);
+
+    updateBanner._cleanup = () => {
+        document.removeEventListener('keydown', onKeydown, true);
+        document.removeEventListener('tvback', onTvBack, true);
+    };
+
+    // Default to "Update Now"; give the DOM a beat to lay out first.
+    setTimeout(paint, 100);
 }
 
 /**
@@ -589,7 +667,16 @@ function reloadApp() {
 function dismissUpdate() {
     const banner = document.getElementById('update-banner');
     if (banner) {
+        // Remove the capture-phase key listeners, or they'd keep swallowing
+        // D-pad input after the prompt is gone.
+        if (banner._cleanup) banner._cleanup();
         banner.remove();
+    }
+
+    // Hand D-pad focus back to whatever screen is underneath, otherwise the
+    // remote is left pointing at a detached button and Select does nothing.
+    if (solitaireGame?.tvRemote) {
+        setTimeout(() => solitaireGame.tvRemote.refresh(), 100);
     }
 }
 
@@ -617,14 +704,33 @@ function showFatalError(message) {
     `;
     
     errorDiv.innerHTML = `
-        <h1 style="margin-bottom: 2rem;">Oops! Something went wrong</h1>
-        <p style="font-size: 1.2rem; margin-bottom: 2rem; max-width: 600px;">${message}</p>
-        <button onclick="window.location.reload()" style="padding: 1rem 2rem; font-size: 1.1rem; background: white; color: #d32f2f; border: none; border-radius: 8px; cursor: pointer;">
+        <h1 style="margin-bottom: 2rem; font-size: 2.5rem;">Oops! Something went wrong</h1>
+        <p style="font-size: 1.5rem; margin-bottom: 2rem; max-width: 800px;">${message}</p>
+        <button id="fatal-refresh-btn" style="padding: 1.25rem 2.5rem; font-size: 1.5rem; background: white; color: #d32f2f; border: 3px solid #ffdd44; border-radius: 8px; cursor: pointer;">
             Refresh Page
         </button>
     `;
-    
+
     document.body.appendChild(errorDiv);
+
+    // Remote-reachable: this screen appears when init failed, so the normal
+    // TV-remote focus system may not exist. Wire the key handling directly and
+    // give the button DOM focus, otherwise a TV player is stuck on a screen
+    // whose only control needs a mouse.
+    const refreshBtn = errorDiv.querySelector('#fatal-refresh-btn');
+    refreshBtn.addEventListener('click', () => window.location.reload());
+
+    document.addEventListener('keydown', (event) => {
+        // Any Select or Back press reloads — there's only one action here.
+        if (event.key === 'Enter' || event.key === ' ' || event.key === 'Escape' ||
+            event.keyCode === 23 || event.keyCode === 96 ||
+            event.keyCode === 4 || event.keyCode === 27) {
+            event.preventDefault();
+            window.location.reload();
+        }
+    }, true);
+
+    setTimeout(() => refreshBtn.focus(), 100);
 }
 
 /**
