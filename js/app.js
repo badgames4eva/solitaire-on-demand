@@ -706,7 +706,10 @@ function loadVersionFromManifest() {
             // Fallback - try to get version from package.json or use default
             const versionDisplay = document.getElementById('version-display');
             if (versionDisplay) {
-                versionDisplay.textContent = 'v1.0.0'; // Fallback version
+                // Don't invent a number here — this display exists to confirm
+                // which build is running, and a plausible-looking fallback is
+                // worse than admitting we couldn't read it.
+                versionDisplay.textContent = 'v?';
             }
         });
 }

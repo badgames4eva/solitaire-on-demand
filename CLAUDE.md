@@ -47,6 +47,16 @@ Also keep `STATIC_FILES` in `sw.js` in sync with the `<script>`/`<link>` tags in
 `index.html`. A file loaded there but missing from that list fails offline.
 (`sound-manager.js` was missing for a while — that's how this was found.)
 
+### Bump the on-screen version too
+
+The version on the main menu comes from **`manifest.toml`** (`[app] version`),
+*not* `manifest.json` — `loadVersionFromManifest()` in `app.js` fetches the TOML
+and regex-matches it. Bump it in step with the `sw.js` cache names; it drifted
+and sat at `1.0.2` across many deploys. It's the only way to confirm from the
+couch which build a device is actually running, so it's kept in
+`NETWORK_FIRST_FILES` and never served from cache. If it reads `v?`, the fetch
+failed rather than the deploy.
+
 ## Remote / focus architecture
 
 Read [FIRE_TV_REMOTE_REFERENCE.md](FIRE_TV_REMOTE_REFERENCE.md) for keycodes.

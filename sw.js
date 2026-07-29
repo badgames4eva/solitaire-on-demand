@@ -30,9 +30,12 @@ const STATIC_FILES = [
     './js/app.js'
 ];
 
-// Files that should always be fetched from network when available
+// Files that should always be fetched from network when available.
+// manifest.toml carries the version shown on the main menu, so it must never
+// be served from cache — a stale copy makes a deploy look like it didn't land.
 const NETWORK_FIRST_FILES = [
-    './manifest.json'
+    './manifest.json',
+    './manifest.toml'
 ];
 
 // Maximum number of items in dynamic cache
