@@ -35,14 +35,17 @@ const AD_CONFIG = {
 /**
  * Play the voluntary support ad, then call onDone().
  *
- * @param {object} deps  { showScreen, returnTo, soundManager }
+ * @param {object} deps  { showScreen, returnTo, soundManager, focusElement }
  *   - showScreen(id): switch to a .screen by id (UIManager.showScreen)
  *   - returnTo: screen id to come back to when the ad finishes (usually 'main-menu')
  *   - soundManager: optional, for a small "thanks" cue
+ *   - focusElement(el): hand real D-pad focus to a newly revealed element. Required
+ *     for the Continue button: the remote clicks its OWN focusedElement pointer, so
+ *     adding a .focused class here would only LOOK focused while Select did nothing.
  * @param {function} onDone  called once when the player leaves the ad screen
  */
 function playSupportAd(deps, onDone) {
-  const { showScreen, returnTo = "main-menu", soundManager } = deps || {};
+  const { showScreen, returnTo = "main-menu", soundManager, focusElement } = deps || {};
 
   // One ad at a time. A stray double-activation (click + Enter, lingering timer)
   // must not stack two countdowns or, on a real SDK, invoke it re-entrantly.
@@ -83,9 +86,17 @@ function playSupportAd(deps, onDone) {
     if (count) count.textContent = "0";
     if (thanks) thanks.hidden = false;
     if (continueBtn) {
+      // Unhide FIRST — the remote's focus scan skips hidden elements, so it has
+      // to be visible before we ask for focus.
       continueBtn.hidden = false;
-      continueBtn.classList.add("focused");
-      if (continueBtn.focus) continueBtn.focus();
+      if (typeof focusElement === "function") {
+        focusElement(continueBtn);
+      } else {
+        // No focus bridge supplied: fall back to the class + DOM focus so the
+        // button is at least visibly highlighted and clickable.
+        continueBtn.classList.add("focused");
+        if (continueBtn.focus) continueBtn.focus();
+      }
     }
     if (soundManager && soundManager.autoComplete) soundManager.autoComplete();
   };

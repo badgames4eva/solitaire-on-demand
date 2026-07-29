@@ -7,9 +7,9 @@
 // copy until the cache name changes, so returning (PWA-installed) players would
 // otherwise be stuck on the old build indefinitely. Changing the version makes
 // the activate handler below delete the stale caches and refetch STATIC_FILES.
-const CACHE_NAME = 'solitaire-on-demand-v1.1.1';
-const STATIC_CACHE_NAME = 'solitaire-static-v1.1.1';
-const DYNAMIC_CACHE_NAME = 'solitaire-dynamic-v1.1.1';
+const CACHE_NAME = 'solitaire-on-demand-v1.1.2';
+const STATIC_CACHE_NAME = 'solitaire-static-v1.1.2';
+const DYNAMIC_CACHE_NAME = 'solitaire-dynamic-v1.1.2';
 
 // Files to cache for offline functionality. Keep in sync with the <script>/<link>
 // tags in index.html — a file loaded there but missing here fails offline.

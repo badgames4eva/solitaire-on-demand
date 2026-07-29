@@ -1209,6 +1209,9 @@ body.tv-remote-mode .control-btn.focused::before {
 #support-ad-screen {
     text-align: center;
     padding: 2rem;
+    /* Content can be taller than the viewport on shorter/landscape screens;
+       allow it to scroll rather than clip the heading and Continue button. */
+    overflow-y: auto;
 }
 #support-ad-screen h2 {
     font-size: 2rem;
@@ -1234,6 +1237,11 @@ body.tv-remote-mode .control-btn.focused::before {
 }
 .support-ad-fake {
     aspect-ratio: 16 / 9;
+    /* Cap the tallest element by viewport height too, so the whole column
+       (heading + note + box + bar + Continue) fits without clipping. width
+       still governs on wide screens; whichever is smaller wins. */
+    max-height: 45vh;
+    margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1241,7 +1249,6 @@ body.tv-remote-mode .control-btn.focused::before {
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.6);
     font-size: 1.6rem;
-    margin-bottom: 1.5rem;
 }
 .support-ad-progress {
     height: 16px;

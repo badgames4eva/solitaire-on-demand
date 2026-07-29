@@ -22,6 +22,14 @@ class UIManager {
         this.currentScreen = 'main-menu';             // Currently active screen
         this.selectedCards = [];                      // Cards currently selected for moving
         this.selectedSource = null;                   // Where selected cards came from
+
+        // Timestamp of the last handled Back press. Several independent keydown
+        // listeners (app.js, game.js, ui.js) all route Back here, and
+        // stopPropagation() does NOT stop other listeners on the same document
+        // node — so one physical press can arrive 2-3 times. Without this guard
+        // the first pass navigates (e.g. ad screen -> main menu) and the second
+        // pass, now seeing main-menu, pops the Exit dialog. See handleBackButton.
+        this.lastBackAt = 0;
         
         // Animation and timing
         this.gameTimer = null;                        // Timer for game duration tracking
@@ -665,8 +673,18 @@ class UIManager {
      */
     handleBackButton() {
         try {
+            // Collapse duplicate deliveries of a single Back press (see
+            // this.lastBackAt). 400ms is well under a deliberate double-press
+            // but comfortably above the same-press listener cascade.
+            const now = Date.now();
+            if (now - this.lastBackAt < 400) {
+                console.log('Ignoring duplicate Back press');
+                return;
+            }
+            this.lastBackAt = now;
+
             console.log('Back button pressed. Current screen:', this.currentScreen, 'History:', this.screenHistory);
-            
+
             // Support (voluntary ad) screen: end the ad cleanly (cancels its
             // timers via ads.js resume()) and drop back to the menu. Do this
             // before the generic history pop so no countdown keeps running.
@@ -2230,6 +2248,14 @@ class UIManager {
                 showScreen: (id) => this.showScreen(id),
                 returnTo: 'main-menu',
                 soundManager: this.soundManager,
+                // Give the remote REAL focus on the revealed Continue button.
+                // Re-scan first because it was hidden when the screen opened, so
+                // it isn't yet in the remote's focusable list; then setFocus
+                // updates focusedElement, which is what Select actually clicks.
+                focusElement: (el) => {
+                    this.tvRemote.updateFocusableElements();
+                    this.tvRemote.setFocus(el);
+                },
             },
             () => this.showScreen('main-menu')
         );
