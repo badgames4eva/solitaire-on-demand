@@ -314,22 +314,24 @@ body.tv-remote-mode .control-btn.focused::before {
     align-items: flex-start;
 }
 
-/* Remote control hints positioning - align with score area */
+/* Remote control hints positioning - pinned to the bottom of the screen so it
+   never collides with the header controls (Play/Undo/Menu). Fixed to the
+   viewport, not the board grid, and centered; sits above the selected-cards
+   bar (bottom: 20px) so the two don't overlap during a move. */
 .remote-hint {
-    position: absolute;
-    top: -3rem; /* Position above the game board, aligned with header */
-    left: 15%;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    /*background: rgba(0, 0, 0, 0.7);*/
+    background: rgba(0, 0, 0, 0.55);
     color: #ffffff;
-    padding: 0.4rem 0.8rem;
+    padding: 0.5rem 1rem;
     border-radius: 1rem;
     font-size: 1.1rem;
     font-weight: 500;
-    /*border: 1px solid rgba(255, 221, 68, 0.3);*/
     opacity: 0.9;
     transition: all 0.3s ease;
     z-index: 10;
@@ -364,7 +366,6 @@ body.tv-remote-mode .control-btn.focused::before {
 .remote-hint:hover {
     opacity: 1;
     background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(255, 221, 68, 0.5);
 }
 
 .remote-hint .hint-icon {
